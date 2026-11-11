@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>奇奇積木工坊 - 空間概念小遊戲</title>
+<link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Huninn', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+    background: radial-gradient(circle at 50% 35%, #7dd3fc 0%, #38bdf8 50%, #0284c7 100%);
+    color: #1e293b; letter-spacing: 0.02em;
+  }
+  button { font-family: inherit; cursor: pointer; }
+
+  /* ---------- 3D 圖示 ---------- */
+  img.fe { height: 1.18em; width: 1.18em; display: inline-block; vertical-align: -0.22em; object-fit: contain;
+    pointer-events: none; filter: drop-shadow(0 0.06em 0.05em rgba(0,0,0,0.18)); }
+
+  /* ---------- 海浪背景 ---------- */
+  .sea-waves { position: fixed; left: 0; right: 0; bottom: 0; height: 150px; z-index: 0; pointer-events: none; overflow: hidden; }
+  .sea-waves svg { position: absolute; bottom: 0; width: 200%; height: 100%; }
+  .sea-waves .w1 { animation: waveMove 14s linear infinite; opacity: 0.5; }
+  .sea-waves .w2 { animation: waveMove 9s linear infinite reverse; opacity: 0.35; bottom: -14px; }
+  @keyframes waveMove { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* ---------- 頂部列 ---------- */
+  header { position: relative; z-index: 20; height: 64px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px; background: rgba(15,23,42,0.5); backdrop-filter: blur(8px); border-bottom: 4px solid rgba(255,255,255,0.3); color: #fff; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; border: 3px solid #fff;
+    font-size: 16px; font-weight: 700; box-shadow: 0 4px 0 rgba(0,0,0,0.18); color: #fff; }
+  .pill.amber { background: linear-gradient(#fbbf24, #f97316); }
+  .pill.white { background: #fff; color: #334155; }
+  .pill.green { background: linear-gradient(#34d399, #059669); }
+  .hdr-group { display: flex; gap: 10px; align-items: center; }
+
+  /* ---------- 故事姐姐字幕 ---------- */
+  #subtitle { position: relative; z-index: 15; margin: 8px auto 0; max-width: 900px; background: rgba(255,255,255,0.95);
+    border: 4px solid #fbbf24; border-radius: 999px; padding: 6px 18px; display: flex; align-items: center; gap: 10px;
+    font-size: 18px; font-weight: 700; box-shadow: 0 6px 16px rgba(0,0,0,0.15); cursor: pointer; }
+  #subtitle .who { background: #f43f5e; color: #fff; font-size: 13px; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
+  #subtitle-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ---------- 畫面切換 ---------- */
+  .screen { position: fixed; inset: 64px 0 0 0; z-index: 5; display: none; }
+  .screen.on { display: block; }
+
+  /* ---------- 選單 ---------- */
+  #menu { display: none; flex-direction: column; align-items: center; padding-top: 70px; }
+  #menu.on { display: flex; }
+  #menu h1 { color: #fff; font-size: 44px; margin: 6px 0 4px; text-shadow: 0 4px 0 rgba(0,0,0,0.18); }
+  #menu .sub { color: #e0f2fe; font-size: 18px; margin-bottom: 22px; }
+  .cards { display: flex; gap: 26px; flex-wrap: wrap; justify-content: center; }
+  .card { width: 260px; min-height: 250px; border-radius: 34px; border: 6px solid #fff; padding: 18px 16px; color: #fff;
+    display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: 0 12px 0 rgba(0,0,0,0.18), 0 18px 30px rgba(0,0,0,0.25);
+    transition: transform 0.2s cubic-bezier(.34,1.56,.64,1); position: relative; }
+  .card .ic { font-size: 84px; line-height: 1; }
+  .card .nm { font-size: 28px; font-weight: 700; }
+  .card .ds { font-size: 15px; background: rgba(255,255,255,0.22); border-radius: 14px; padding: 6px 10px; text-align: center; }
+  .card .st { position: absolute; top: -12px; right: -10px; background: #fde047; color: #1e293b; border: 3px solid #fff;
+    border-radius: 999px; padding: 2px 10px; font-weight: 700; font-size: 15px; }
+  .c-sorter { background: linear-gradient(160deg, #fb7185, #e11d48); }
+  .c-jigsaw { background: linear-gradient(160deg, #a78bfa, #6d28d9); }
+  .c-tangram { background: linear-gradient(160deg, #34d399, #0f766e); }
+  .menu-row { display: flex; gap: 14px; margin-top: 30px; }
+  .big-btn { font-size: 20px; font-weight: 700; padding: 12px 26px; border-radius: 999px; border: 4px solid #fff;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.2); transition: transform 0.2s cubic-bezier(.34,1.56,.64,1); }
+  .fbtn.focus { transform: scale(1.07) translateY(-3px); box-shadow: 0 0 0 5px #fff, 0 0 0 11px #facc15, 0 14px 28px rgba(0,0,0,0.35) !important; }
+
+  /* ---------- 遊戲舞台（邏輯尺寸 1000 x 560，等比縮放） ---------- */
+  #play { }
+  #stage-wrap { position: absolute; left: 0; right: 0; top: 56px; bottom: 104px; display: flex; align-items: center; justify-content: center; }
+  #stage { position: relative; width: 1000px; height: 560px; transform-origin: center center; flex-shrink: 0; }
+  .board-bg { position: absolute; left: 10px; top: 10px; width: 600px; height: 540px; border-radius: 36px;
+    background: rgba(255,255,255,0.88); border: 6px solid #fff; box-shadow: 0 14px 30px rgba(0,0,0,0.2); }
+  .tray-bg { position: absolute; left: 630px; top: 10px; width: 360px; height: 540px; border-radius: 36px;
+    background: rgba(254,243,199,0.9); border: 6px dashed #f59e0b; }
+  .tray-label { position: absolute; left: 630px; top: 22px; width: 360px; text-align: center; color: #b45309; font-weight: 700; font-size: 18px; pointer-events: none; }
+
+  .slot { position: absolute; transform: translate(-50%, -50%); pointer-events: none; }
+  .slot.hint { animation: hintPulse 0.9s ease-in-out infinite; }
+  @keyframes hintPulse { 0%,100% { filter: drop-shadow(0 0 0 #facc15); } 50% { filter: drop-shadow(0 0 14px #facc15) drop-shadow(0 0 6px #fde047); } }
+
+  .piece { position: absolute; cursor: grab; touch-action: none; z-index: 10; will-change: transform; }
+  .piece.anim { transition: left 0.35s cubic-bezier(.34,1.56,.64,1), top 0.35s cubic-bezier(.34,1.56,.64,1), transform 0.3s ease; }
+  .piece.dragging { cursor: grabbing; z-index: 50; filter: drop-shadow(0 16px 14px rgba(0,0,0,0.3)); }
+  .piece.placed { z-index: 2; cursor: default; }
+  .piece.sel { z-index: 40; filter: drop-shadow(0 0 0 #fff) drop-shadow(0 0 10px #facc15) drop-shadow(0 0 4px #fde047); }
+  .piece.sel::after { content: '👇'; position: absolute; left: 50%; top: -44px; transform: translateX(-50%); font-size: 34px; animation: finger 0.6s infinite alternate; }
+  @keyframes finger { from { margin-top: 0; } to { margin-top: -10px; } }
+  .piece.wobble { animation: wobble 0.5s ease; }
+  @keyframes wobble { 0%,100% { margin-left: 0; } 20% { margin-left: -12px; } 40% { margin-left: 12px; } 60% { margin-left: -8px; } 80% { margin-left: 8px; } }
+  .piece.pop { animation: popIn 0.45s ease; }
+  @keyframes popIn { 0% { scale: 1.25; } 60% { scale: 0.92; } 100% { scale: 1; } }
+  .piece svg, .slot svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .piece canvas, .slot canvas { display: block; width: 100%; height: 100%; border-radius: 14px; }
+
+  /* 底部控制列（觸控也能用） */
+  #controls { position: absolute; left: 0; right: 0; bottom: 14px; display: flex; justify-content: center; gap: 14px; z-index: 30; }
+  .ctl { font-size: 20px; font-weight: 700; padding: 10px 22px; border-radius: 999px; border: 4px solid #fff;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.22); color: #fff; }
+  .ctl:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.22); }
+  .ctl.rot { background: linear-gradient(#a78bfa, #7c3aed); }
+  .ctl.hint { background: linear-gradient(#fde047, #f59e0b); color: #422006; }
+  .ctl.say { background: linear-gradient(#38bdf8, #0284c7); }
+  .ctl.home { background: #fff; color: #334155; }
+  .ctl .k { font-size: 13px; opacity: 0.85; margin-left: 4px; }
+  #mode-tip { position: absolute; left: 50%; transform: translateX(-50%); bottom: 74px; color: #fff; font-weight: 700; font-size: 17px;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.3); z-index: 25; white-space: nowrap; }
+
+  /* ---------- 過關慶祝 ---------- */
+  #celebrate { position: fixed; inset: 0; z-index: 80; display: none; align-items: center; justify-content: center;
+    background: radial-gradient(circle, rgba(76,29,149,0.85), rgba(15,23,42,0.92)); }
+  #celebrate.on { display: flex; }
+  .celeb-card { background: rgba(255,255,255,0.1); border: 5px solid #fde047; border-radius: 40px; padding: 26px 40px; text-align: center; color: #fff;
+    box-shadow: 0 0 60px rgba(250,204,21,0.45); animation: curtain 0.5s cubic-bezier(.34,1.56,.64,1); max-width: 720px; }
+  @keyframes curtain { from { transform: scale(0.7) translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .celeb-art { font-size: 120px; line-height: 1.1; animation: bounce 0.8s ease-in-out infinite alternate; }
+  @keyframes bounce { from { transform: translateY(0) rotate(-4deg); } to { transform: translateY(-14px) rotate(4deg); } }
+  .celeb-title { font-size: 40px; font-weight: 700; color: #fde047; margin: 6px 0; }
+  .celeb-sub { font-size: 20px; opacity: 0.9; }
+  .celeb-row { display: flex; gap: 16px; justify-content: center; margin-top: 18px; }
+
+  #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 90; }
+  #toast { position: fixed; left: 50%; top: 76px; transform: translate(-50%, -20px); opacity: 0; transition: all 0.3s; z-index: 95;
+    background: rgba(15,23,42,0.92); color: #fff; padding: 8px 18px; border-radius: 999px; border: 3px solid #fff; font-weight: 700; pointer-events: none; }
+  #toast.show { transform: translate(-50%, 0); opacity: 1; }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; } }
+</style>
+</head>
+<body>
+  <div class="sea-waves" aria-hidden="true">
+    <svg class="w1" viewBox="0 0 2880 150" preserveAspectRatio="none"><path fill="#fff" d="M0,80 C240,30 480,130 720,80 C960,30 1200,130 1440,80 C1680,30 1920,130 2160,80 C2400,30 2640,130 2880,80 L2880,150 L0,150 Z"/></svg>
+    <svg class="w2" viewBox="0 0 2880 150" preserveAspectRatio="none"><path fill="#e0f2fe" d="M0,100 C180,60 360,140 720,100 C1080,60 1260,140 1440,100 C1620,60 1800,140 2160,100 C2520,60 2700,140 2880,100 L2880,150 L0,150 Z"/></svg>
+  </div>
+  <canvas id="confetti"></canvas>
+  <div id="toast"></div>
+
+  <header>
+    <div class="hdr-group">
+      <a href="../" class="pill amber" style="text-decoration:none">🏝️ 回奇奇島</a>
+      <span class="pill white">🧩 奇奇積木工坊</span>
+      <span class="pill white">⭐ <span id="star-total">0</span></span>
+    </div>
+    <div class="hdr-group">
+      <button id="age-btn" class="pill green" onclick="toggleAge()">🌱 3-4歲</button>
+    </div>
+  </header>
+
+  <!-- 選單 -->
+  <section id="menu" class="screen">
+    <div id="subtitle-menu-anchor"></div>
+    <h1>🧩 奇奇積木工坊</h1>
+    <div class="sub">動手拖一拖、轉一轉、拼一拼，練習空間概念！</div>
+    <div class="cards">
+      <button class="card c-sorter fbtn" data-act="sorter" onclick="startActivity('sorter')">
+        <span class="st" id="st-sorter">⭐ 0</span>
+        <span class="ic">🔺</span><span class="nm">形狀投入箱</span>
+        <span class="ds">把形狀放進一樣的洞洞，大班要先轉對方向！</span>
+      </button>
+      <button class="card c-jigsaw fbtn" data-act="jigsaw" onclick="startActivity('jigsaw')">
+        <span class="st" id="st-jigsaw">⭐ 0</span>
+        <span class="ic">🦁</span><span class="nm">動物拼圖</span>
+        <span class="ds">一片一片拼回去，看看是哪隻動物？</span>
+      </button>
+      <button class="card c-tangram fbtn" data-act="tangram" onclick="startActivity('tangram')">
+        <span class="st" id="st-tangram">⭐ 0</span>
+        <span class="ic">🏠</span><span class="nm">寶寶七巧板</span>
+        <span class="ds">用積木把黑影子填滿，拼出房子和小魚！</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- 遊戲 -->
+  <section id="play" class="screen">
+    <div id="mode-tip"></div>
+    <div id="stage-wrap"><div id="stage"></div></div>
+    <div id="controls">
+      <button class="ctl rot" id="btn-rot" onclick="rotateCurrent()">🔄 轉一轉<span class="k">(□/X/R)</span></button>
+      <button class="ctl hint" onclick="showHint()">💡 提示<span class="k">(△/Y/H)</span></button>
+      <button class="ctl say" onclick="repeatVoice()">🔊 再聽一次</button>
+      <button class="ctl home" onclick="goMenu()">📋 選單<span class="k">(Esc)</span></button>
+    </div>
+  </section>
+
+  <!-- 字幕條（固定在頂部列下方） -->
+  <div id="subtitle" onclick="repeatVoice()" style="position:fixed;left:50%;transform:translateX(-50%);top:70px;width:min(900px,92vw);margin:0;">
+    <span>👩‍🏫</span><span class="who">故事姐姐</span><span id="subtitle-text">嗨！一起來玩積木吧！</span>
+  </div>
+
+  <!-- 過關 -->
+  <div id="celebrate">
+    <div class="celeb-card">
+      <div class="celeb-art" id="celeb-art">🎉</div>
+      <div class="celeb-title" id="celeb-title">完成了！</div>
+      <div class="celeb-sub" id="celeb-sub">獲得一顆星星 ⭐</div>
+      <div class="celeb-row">
+        <button class="big-btn fbtn" style="background:linear-gradient(#34d399,#059669);color:#fff" onclick="nextRound()">▶ 再玩一題</button>
+        <button class="big-btn fbtn" style="background:#fff;color:#334155" onclick="goMenu()">📋 選別的遊戲</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =====================================================================
+ * 0. 共用：存檔、音效、語音（與奇奇島共用 Azure 雲端語音設定）
+ * ===================================================================== */
+const SAVE_KEY = 'qiqi-blocks-v1';
+let save = { age: 1, stars: { sorter: 0, jigsaw: 0, tangram: 0 } };
+try {
+  const main = JSON.parse(localStorage.getItem('qiqi-island-party-v3') || '{}');
+  if (main.ageLevel === 1 || main.ageLevel === 2) save.age = main.ageLevel;
+  Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}'));
+} catch (e) {}
+function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
+
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function tone(f, d = 0.2, type = 'triangle', v = 0.28, delay = 0) {
+  try {
+    ensureAudio();
+    const t0 = audioCtx.currentTime + delay;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t0);
+    g.gain.setValueAtTime(v, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + d);
+    o.connect(g); g.connect(audioCtx.destination); o.start(t0); o.stop(t0 + d);
+  } catch (e) {}
+}
+const sfx = {
+  move: () => tone(560, 0.07, 'sine', 0.12),
+  pick: () => tone(700, 0.1, 'sine', 0.2),
+  rotate: () => { tone(520, 0.08, 'sine', 0.18); tone(780, 0.1, 'sine', 0.18, 0.06); },
+  place: () => { tone(660, 0.12); tone(990, 0.18, 'triangle', 0.28, 0.08); },
+  wrong: () => tone(220, 0.22, 'sine', 0.2),
+  win: () => [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, 0.3, 'triangle', 0.32, [0, .11, .22, .33, .48, .63][i])),
+};
+
+/* ---------- 語音：瀏覽器內建（挑最自然的） + Azure 雲端（若在奇奇島設定過金鑰） ---------- */
+let voiceCfg = { engine: 'browser', key: '', region: 'eastasia', voice: 'zh-TW-HsiaoChenNeural', rate: '-15%' };
+try { Object.assign(voiceCfg, JSON.parse(localStorage.getItem('qiqi-voice-cfg') || '{}')); } catch (e) {}
+let zhVoice = null, lastSay = '', speakSeq = 0, cloudSrc = null, cloudWarned = false, sdkPromise = null;
+const ttsCache = new Map();
+
+function pickVoice() {
+  if (!('speechSynthesis' in window)) return;
+  const vs = speechSynthesis.getVoices().filter(v => /^(zh|cmn)/i.test(v.lang) && !/HK|yue/i.test(v.lang + v.name));
+  const score = v => (/TW|Taiwan|臺灣|台灣/i.test(v.lang + v.name) ? 60 : 0) + (/Natural|Neural/i.test(v.name) ? 100 : 0) + (/Google/i.test(v.name) ? 45 : 0);
+  vs.sort((a, b) => score(b) - score(a));
+  let saved = null; try { saved = localStorage.getItem('qiqi-voice-name'); } catch (e) {}
+  zhVoice = vs.find(v => v.name === saved) || vs[0] || null;
+}
+if ('speechSynthesis' in window) { speechSynthesis.onvoiceschanged = pickVoice; pickVoice(); }
+
+function cleanText(t) {
+  return String(t).replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '').replace(/\s+/g, ' ').trim();
+}
+function useCloud() { return voiceCfg.engine === 'azure' && voiceCfg.key && voiceCfg.region; }
+function stopSpeech() {
+  speakSeq++;
+  if (cloudSrc) { try { cloudSrc.stop(); } catch (e) {} cloudSrc = null; }
+  if ('speechSynthesis' in window) { try { speechSynthesis.cancel(); } catch (e) {} }
+}
+function ssml(text) {
+  const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-TW"><voice name="${voiceCfg.voice}"><prosody rate="${voiceCfg.rate}" pitch="+3%">${esc}</prosody></voice></speak>`;
+}
+async function azureBytes(body) {
+  let res;
+  try {
+    res = await fetch(`https://${voiceCfg.region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+      method: 'POST', body,
+      headers: { 'Ocp-Apim-Subscription-Key': voiceCfg.key, 'Content-Type': 'application/ssml+xml', 'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3' }
+    });
+  } catch (e) {
+    if (!sdkPromise) sdkPromise = new Promise((ok, no) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@1/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js';
+      s.onload = () => window.SpeechSDK ? ok(window.SpeechSDK) : no(new Error('SDK 載入失敗'));
+      s.onerror = () => { sdkPromise = null; no(new Error('無法連線雲端語音')); };
+      document.head.appendChild(s);
+    });
+    const SDK = await sdkPromise;
+    return new Promise((ok, no) => {
+      const cfg = SDK.SpeechConfig.fromSubscription(voiceCfg.key, voiceCfg.region);
+      cfg.speechSynthesisOutputFormat = SDK.SpeechSynthesisOutputFormat.Audio24Khz48KBitRateMonoMp3;
+      const syn = new SDK.SpeechSynthesizer(cfg, null);
+      syn.speakSsmlAsync(body, r => { syn.close(); r.reason === SDK.ResultReason.SynthesizingAudioCompleted ? ok(r.audioData) : no(new Error(r.errorDetails)); },
+        err => { syn.close(); no(new Error(String(err))); });
+    });
+  }
+  if (!res.ok) throw new Error(res.status === 401 ? '金鑰或區域不正確' : `雲端語音錯誤 ${res.status}`);
+  return res.arrayBuffer();
+}
+async function speakCloud(text, seq) {
+  const body = ssml(text);
+  let buf = ttsCache.get(body);
+  if (!buf) {
+    const bytes = await azureBytes(body);
+    ensureAudio();
+    buf = await new Promise((ok, no) => audioCtx.decodeAudioData(bytes.slice(0), ok, no));
+    ttsCache.set(body, buf);
+  }
+  if (seq !== speakSeq) return;
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf; src.connect(audioCtx.destination); src.start(); cloudSrc = src;
+}
+function speakBrowser(text) {
+  if (!('speechSynthesis' in window)) return;
+  try {
+    if (!zhVoice) pickVoice();
+    const u = new SpeechSynthesisUtterance(text);
+    if (zhVoice) { u.voice = zhVoice; u.lang = zhVoice.lang; } else u.lang = 'zh-TW';
+    const natural = zhVoice && /Natural|Neural|Google/i.test(zhVoice.name);
+    u.rate = natural ? 0.95 : 0.9; u.pitch = natural ? 1.05 : 1.18;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function say(text) {
+  lastSay = text;
+  document.getElementById('subtitle-text').textContent = text;
+  const t = cleanText(text);
+  if (!t) return;
+  stopSpeech();
+  const seq = speakSeq;
+  if (useCloud()) {
+    speakCloud(t, seq).catch(err => {
+      if (!cloudWarned) { cloudWarned = true; toast(`☁️ 雲端語音暫時不能用（${err.message}），先用內建語音`); }
+      if (seq === speakSeq) speakBrowser(t);
+    });
+  } else speakBrowser(t);
+}
+function repeatVoice() { ensureAudio(); if (lastSay) say(lastSay); }
+function toast(t, ms = 3000) {
+  const el = document.getElementById('toast');
+  el.textContent = t; el.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('show'), ms);
+}
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+/* =====================================================================
+ * 1. 形狀定義（SVG）
+ *    每個形狀：w,h 為邏輯像素尺寸；sym 為旋轉對稱角度（0 = 怎麼轉都一樣）
+ * ===================================================================== */
+const SORTER_SHAPES = {
+  circle:   { name: '圓形',   w: 110, h: 110, sym: 0,   vb: '0 0 100 100', d: '<circle cx="50" cy="50" r="48"/>' },
+  square:   { name: '正方形', w: 104, h: 104, sym: 90,  vb: '0 0 100 100', d: '<rect x="2" y="2" width="96" height="96" rx="8"/>' },
+  triangle: { name: '三角形', w: 116, h: 104, sym: 360, vb: '0 0 100 90',  d: '<polygon points="50,3 97,87 3,87" stroke-linejoin="round"/>' },
+  star:     { name: '星星',   w: 118, h: 114, sym: 360, vb: '0 0 100 96',  d: '<polygon stroke-linejoin="round" points="50,3 62,36 97,37 69,58 79,92 50,72 21,92 31,58 3,37 38,36"/>' },
+  heart:    { name: '愛心',   w: 116, h: 104, sym: 360, vb: '0 0 100 90',  d: '<path d="M50,86 C20,64 2,46 2,26 C2,12 13,2 27,2 C38,2 46,9 50,18 C54,9 62,2 73,2 C87,2 98,12 98,26 C98,46 80,64 50,86 Z"/>' },
+  rect:     { name: '長方形', w: 140, h: 76,  sym: 180, vb: '0 0 140 76',  d: '<rect x="2" y="2" width="136" height="72" rx="8"/>' },
+  moon:     { name: '月亮',   w: 104, h: 110, sym: 360, vb: '0 0 100 106', d: '<path d="M62,4 C34,10 16,32 16,56 C16,82 38,104 66,102 C46,94 34,76 34,54 C34,32 46,14 62,4 Z"/>' },
+};
+const PIECE_COLORS = ['#f43f5e', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#14b8a6', '#f97316'];
+
+function shapeSVG(def, fill, opts = {}) {
+  const stroke = opts.stroke || 'rgba(255,255,255,0.85)';
+  const sw = opts.sw ?? 5;
+  const gloss = opts.gloss === false ? '' :
+    `<defs><linearGradient id="g${opts.gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="0.45" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
+  const body = def.d.replace(/^<(\w+)/, `<$1 fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${opts.dash ? ` stroke-dasharray="${opts.dash}"` : ''}`);
+  const shine = opts.gloss === false ? '' : def.d.replace(/^<(\w+)/, `<$1 fill="url(#g${opts.gid})" stroke="none"`);
+  return `<svg viewBox="${def.vb}" preserveAspectRatio="none">${gloss}${body}${shine}</svg>`;
+}
+
+/* 七巧板積木（以格子單位 U 定義，w/h 為單位數） */
+const U = 78;
+const TAN_KINDS = {
+  square: { w: 2, h: 2, sym: 90,  vb: '0 0 200 200', d: '<rect x="3" y="3" width="194" height="194" rx="6"/>' },
+  rect:   { w: 2, h: 1, sym: 180, vb: '0 0 200 100', d: '<rect x="3" y="3" width="194" height="94" rx="6"/>' },
+  tri:    { w: 2, h: 2, sym: 360, vb: '0 0 200 200', d: '<polygon stroke-linejoin="round" points="3,3 3,197 197,197"/>' },
+  roof:   { w: 2, h: 1, sym: 360, vb: '0 0 200 100', d: '<polygon stroke-linejoin="round" points="3,97 100,3 197,97"/>' },
+  half:   { w: 2, h: 1, sym: 360, vb: '0 0 200 100', d: '<path d="M3,97 A97,94 0 0 1 197,97 Z"/>' },
+};
+/* x,y = 旋轉後外框的左上角（單位），r = 旋轉角度 */
+const TANGRAMS = {
+  1: [
+    { name: '房子', icon: '🏠', parts: [{ k: 'roof', x: 0, y: 0, r: 0 }, { k: 'square', x: 0, y: 1, r: 0 }] },
+    { name: '冰淇淋', icon: '🍦', parts: [{ k: 'half', x: 0, y: 0, r: 0 }, { k: 'roof', x: 0, y: 1, r: 180 }] },
+    { name: '蘑菇', icon: '🍄', parts: [{ k: 'half', x: 0, y: 0, r: 0 }, { k: 'rect', x: 0.5, y: 1, r: 90 }] },
+    { name: '帆船', icon: '⛵', parts: [{ k: 'tri', x: 0.5, y: 0, r: 0 }, { k: 'rect', x: 0, y: 2, r: 0 }, { k: 'rect', x: 2, y: 2, r: 0 }] },
+  ],
+  2: [
+    { name: '大樹', icon: '🌲', parts: [{ k: 'roof', x: 0, y: 0, r: 0 }, { k: 'roof', x: 0, y: 1, r: 0 }, { k: 'rect', x: 0.5, y: 2, r: 90 }] },
+    { name: '小魚', icon: '🐟', parts: [{ k: 'roof', x: 0, y: 0, r: 90 }, { k: 'square', x: 1, y: 0, r: 0 }, { k: 'roof', x: 3, y: 0, r: 90 }] },
+    { name: '小村莊', icon: '🏘️', parts: [{ k: 'roof', x: 0, y: 0, r: 0 }, { k: 'square', x: 0, y: 1, r: 0 }, { k: 'roof', x: 2, y: 0, r: 0 }, { k: 'square', x: 2, y: 1, r: 0 }] },
+    { name: '城堡', icon: '🏰', parts: [{ k: 'roof', x: 0, y: 0, r: 0 }, { k: 'square', x: 0, y: 1, r: 0 }, { k: 'rect', x: 2, y: 2, r: 0 }, { k: 'roof', x: 4, y: 0, r: 0 }, { k: 'square', x: 4, y: 1, r: 0 }] },
+    { name: '火箭', icon: '🚀', parts: [{ k: 'roof', x: 0.5, y: 0, r: 0 }, { k: 'square', x: 0.5, y: 1, r: 0 }, { k: 'tri', x: -1.5, y: 1.5, r: 270 }, { k: 'tri', x: 2.5, y: 1.5, r: 0 }] },
+  ],
+};
+
+/* 拼圖場景（用 3D 圖示組成的圖畫） */
+const JIGSAW_SCENES = [
+  { name: '獅子', icon: '🦁', bg: ['#fef08a', '#86efac'], items: [['🦁', 240, 190, 230], ['🌞', 70, 60, 90], ['🌳', 410, 250, 120], ['🌼', 80, 300, 70]] },
+  { name: '鯨魚', icon: '🐳', bg: ['#7dd3fc', '#1d4ed8'], items: [['🐳', 250, 180, 240], ['🐠', 80, 90, 80], ['🐚', 410, 310, 70], ['🐙', 80, 290, 90]] },
+  { name: '熊貓', icon: '🐼', bg: ['#dcfce7', '#4ade80'], items: [['🐼', 250, 190, 230], ['🎋', 70, 200, 140], ['🌸', 420, 70, 80], ['🌸', 410, 300, 60]] },
+  { name: '恐龍', icon: '🦖', bg: ['#fde68a', '#fb923c'], items: [['🦖', 240, 190, 240], ['🌋', 410, 110, 120], ['🌴', 70, 230, 130], ['🥚', 420, 310, 60]] },
+  { name: '兔子', icon: '🐰', bg: ['#fbcfe8', '#c4b5fd'], items: [['🐰', 240, 190, 230], ['🥕', 410, 290, 90], ['🌈', 90, 70, 110], ['🍄', 70, 300, 70]] },
+  { name: '火箭', icon: '🚀', bg: ['#312e81', '#7c3aed'], items: [['🚀', 240, 180, 220], ['🌙', 80, 70, 90], ['🪐', 410, 90, 100], ['⭐', 400, 300, 60], ['⭐', 70, 300, 45]] },
+];
+
+/* =====================================================================
+ * 2. 舞台與積木引擎（拖曳、點一下旋轉、吸附判定、遙控器操作）
+ * ===================================================================== */
+const stage = document.getElementById('stage');
+let scale = 1;
+let act = null;          // 目前關卡 { id, slots, pieces, rotate, onDone }
+let sel = null;          // 遙控器選中的積木
+let held = null;         // 遙控器「拿起來」的積木
+let hoverSlot = null;    // 拿起來時停在哪個洞
+
+function fitStage() {
+  const wrap = document.getElementById('stage-wrap');
+  const r = wrap.getBoundingClientRect();
+  scale = Math.min(r.width / 1000, r.height / 560);
+  stage.style.transform = `scale(${scale})`;
+}
+window.addEventListener('resize', fitStage);
+
+function toLogical(e) {
+  const r = stage.getBoundingClientRect();
+  return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale };
+}
+
+function rotOk(p, s) {
+  const sym = p.sym;
+  if (!sym) return true;
+  return (((p.rot - s.rot) % sym) + sym) % sym === 0;
+}
+
+function applyPos(p) {
+  p.el.style.left = p.cx + 'px';
+  p.el.style.top = p.cy + 'px';
+  const sc = (p.placed || p.dragging || p === held) ? 1 : p.trayScale;
+  p.el.style.transform = `translate(-50%, -50%) rotate(${p.rot}deg) scale(${sc})`;
+}
+
+function addSlot(s) {
+  const el = document.createElement('div');
+  el.className = 'slot';
+  el.style.width = s.w + 'px'; el.style.height = s.h + 'px';
+  el.style.left = s.cx + 'px'; el.style.top = s.cy + 'px';
+  el.style.transform = `translate(-50%, -50%) rotate(${s.rot}deg)`;
+  el.innerHTML = s.html;
+  stage.appendChild(el);
+  s.el = el; s.filled = null;
+  act.slots.push(s);
+  return s;
+}
+
+function addPiece(p) {
+  const el = document.createElement('div');
+  el.className = 'piece anim';
+  el.style.width = p.w + 'px'; el.style.height = p.h + 'px';
+  if (p.node) el.appendChild(p.node); else el.innerHTML = p.html;
+  stage.appendChild(el);
+  p.el = el; p.placed = false; p.wrong = 0;
+  p.cx = p.homeX; p.cy = p.homeY;
+  p.trayScale = p.trayScale || 1;
+  applyPos(p);
+  act.pieces.push(p);
+  bindDrag(p);
+  return p;
+}
+
+function bindDrag(p) {
+  let start = null, off = null, moved = false;
+  p.el.addEventListener('pointerdown', (e) => {
+    if (p.placed) return;
+    ensureAudio();
+    e.preventDefault();
+    p.el.setPointerCapture(e.pointerId);
+    const pt = toLogical(e);
+    start = { x: pt.x, y: pt.y, t: performance.now() };
+    off = { x: pt.x - p.cx, y: pt.y - p.cy };
+    moved = false;
+    if (held && held !== p) dropHeld(false);
+    setSel(p, false);
+  });
+  p.el.addEventListener('pointermove', (e) => {
+    if (!start || p.placed) return;
+    const pt = toLogical(e);
+    if (!moved && Math.hypot(pt.x - start.x, pt.y - start.y) > 8) {
+      moved = true;
+      p.dragging = true;
+      p.el.classList.remove('anim');
+      p.el.classList.add('dragging');
+      sfx.pick();
+    }
+    if (moved) {
+      p.cx = Math.max(0, Math.min(1000, pt.x - off.x));
+      p.cy = Math.max(0, Math.min(560, pt.y - off.y));
+      applyPos(p);
+    }
+  });
+  const end = () => {
+    if (!start) return;
+    const wasTap = !moved && performance.now() - start.t < 400;
+    start = null;
+    if (p.placed) return;
+    p.el.classList.add('anim');
+    p.el.classList.remove('dragging');
+    p.dragging = false;
+    if (wasTap) {
+      if (act.rotate) rotatePiece(p);
+      else { sfx.move(); applyPos(p); }
+      return;
+    }
+    applyPos(p);
+    tryPlace(p, nearestSlot(p, 85));
+  };
+  p.el.addEventListener('pointerup', end);
+  p.el.addEventListener('pointercancel', end);
+}
+
+function nearestSlot(p, maxDist) {
+  let best = null, bd = maxDist;
+  act.slots.forEach(s => {
+    const d = Math.hypot(s.cx - p.cx, s.cy - p.cy);
+    if (d < bd) { bd = d; best = s; }
+  });
+  return best;
+}
+
+function goHome(p) {
+  p.cx = p.homeX; p.cy = p.homeY;
+  applyPos(p);
+}
+
+function wobble(p) {
+  p.el.classList.remove('wobble'); void p.el.offsetWidth; p.el.classList.add('wobble');
+}
+
+function tryPlace(p, s) {
+  if (!s) return 'free';                                  // 放在空地：就留在那裡
+  if (s.filled) { goHome(p); sfx.wrong(); return 'full'; }
+  if (s.kind !== p.kind) {
+    p.wrong++; sfx.wrong(); wobble(p);
+    say(pick(act.msgWrongShape));
+    setTimeout(() => goHome(p), 350);
+    if (p.wrong >= 2) showHint(p);
+    return 'shape';
+  }
+  if (!rotOk(p, s)) {
+    // 形狀對了但方向不對：停在洞上，提醒轉一轉（轉對了會自動放進去）
+    p.cx = s.cx; p.cy = s.cy; applyPos(p);
+    p.wrong++; wobble(p); sfx.wrong();
+    say(remoteMode ? '形狀對了！按方塊鍵轉一轉，讓它對準洞洞！' : '形狀對了！點一下積木轉一轉，讓它對準洞洞！');
+    return 'rotate';
+  }
+  // 放進去！
+  p.cx = s.cx; p.cy = s.cy; p.placed = true; s.filled = p;
+  if (held === p) { held = null; hoverSlot = null; }
+  p.el.classList.add('placed');
+  p.el.classList.remove('sel');
+  p.el.classList.remove('pop'); void p.el.offsetWidth; p.el.classList.add('pop');
+  applyPos(p);
+  clearHints();
+  sfx.place();
+  burst(p.cx, p.cy);
+  if (sel === p) sel = null;
+  const left = act.pieces.filter(q => !q.placed).length;
+  if (left === 0) {
+    setTimeout(() => act.onDone(), 650);
+  } else {
+    say(pick(['放進去了！', '好棒！', '對了！', '答對囉！', '太厲害了！']));
+    autoSelectNext();
+  }
+  return 'ok';
+}
+
+function rotatePiece(p) {
+  if (!act.rotate || !p || p.placed) return;
+  p.rot = (p.rot + 90) % 360;
+  sfx.rotate();
+  applyPos(p);
+  // 轉完如果剛好停在對的洞上，就自動放進去
+  const s = nearestSlot(p, 22);
+  if (s && !s.filled && s.kind === p.kind && rotOk(p, s)) setTimeout(() => tryPlace(p, s), 280);
+}
+
+function rotateCurrent() {
+  ensureAudio();
+  const p = held || sel || act?.pieces.find(q => !q.placed);
+  if (!act?.rotate) { say('這一關不用轉，直接拼拼看！'); return; }
+  rotatePiece(p);
+}
+
+function clearHints() { act?.slots.forEach(s => s.el.classList.remove('hint')); }
+
+function showHint(forPiece) {
+  if (!act) return;
+  ensureAudio();
+  clearHints();
+  const p = forPiece || held || sel || act.pieces.find(q => !q.placed);
+  if (!p) return;
+  const s = act.slots.find(s => !s.filled && s.kind === p.kind && rotOk(p, s)) ||
+            act.slots.find(s => !s.filled && s.kind === p.kind);
+  if (s) {
+    s.el.classList.add('hint');
+    if (!forPiece) say(act.rotate && !rotOk(p, s) ? '發亮的地方就是它的家！記得轉一轉喔！' : '看！發亮的地方就是它的家！');
+  }
+}
+
+/* ---------- 遙控器 / 鍵盤 / 手把：選積木 → 拿起來 → 移到洞上 → 放下 ---------- */
+let remoteMode = false;
+function setSel(p, sound = true) {
+  act?.pieces.forEach(q => q.el.classList.remove('sel'));
+  sel = p;
+  if (p && !p.placed) { p.el.classList.add('sel'); if (sound) sfx.move(); }
+}
+function autoSelectNext() {
+  if (!remoteMode) return;
+  const next = act.pieces.find(q => !q.placed);
+  setSel(next || null, false);
+}
+function spatialPick(list, from, dir) {
+  let best = null, bs = Infinity;
+  list.forEach(it => {
+    if (it === from) return;
+    const dx = it.cx - from.cx, dy = it.cy - from.cy;
+    const ok = (dir === 'right' && dx > 10) || (dir === 'left' && dx < -10) || (dir === 'down' && dy > 10) || (dir === 'up' && dy < -10);
+    if (!ok) return;
+    const sc = (dir === 'left' || dir === 'right') ? Math.abs(dx) + Math.abs(dy) * 2 : Math.abs(dy) + Math.abs(dx) * 2;
+    if (sc < bs) { bs = sc; best = it; }
+  });
+  return best;
+}
+function remoteDir(dir) {
+  if (!act) return;
+  remoteMode = true;
+  updateModeTip();
+  if (held) {
+    const free = act.slots.filter(s => !s.filled);
+    const cur = hoverSlot || { cx: held.cx, cy: held.cy };
+    const nxt = spatialPick(free, cur, dir);
+    if (nxt) { hoverSlot = nxt; held.cx = nxt.cx; held.cy = nxt.cy; applyPos(held); sfx.move(); }
+    return;
+  }
+  const list = act.pieces.filter(q => !q.placed);
+  if (!list.length) return;
+  if (!sel || sel.placed) { setSel(list[0]); return; }
+  const nxt = spatialPick(list, sel, dir) || list[(list.indexOf(sel) + (dir === 'right' || dir === 'down' ? 1 : list.length - 1)) % list.length];
+  setSel(nxt);
+}
+function remoteOK() {
+  if (!act) return;
+  remoteMode = true;
+  if (held) { const r = tryPlace(held, hoverSlot); if (r === 'shape' || r === 'full') { held = null; hoverSlot = null; autoSelectNext(); } updateModeTip(); return; }
+  if (!sel || sel.placed) { autoSelectNext(); return; }
+  held = sel;
+  const free = act.slots.filter(s => !s.filled);
+  hoverSlot = free.sort((a, b) => Math.hypot(a.cx - 300, a.cy - 280) - Math.hypot(b.cx - 300, b.cy - 280))[0];
+  held.el.style.zIndex = 45;
+  held.cx = hoverSlot.cx; held.cy = hoverSlot.cy; applyPos(held);
+  sfx.pick();
+  updateModeTip();
+}
+function dropHeld(sound = true) {
+  if (!held) return;
+  held.el.style.zIndex = '';
+  goHome(held); held = null; hoverSlot = null;
+  if (sound) sfx.move();
+  updateModeTip();
+}
+function updateModeTip() {
+  const tip = document.getElementById('mode-tip');
+  if (!remoteMode || !act) { tip.textContent = act ? '👆 用手指拖一拖' + (act.rotate ? '，點一下可以轉一轉' : '') : ''; return; }
+  tip.textContent = held
+    ? '🎮 十字鍵移到洞洞上 → ✕/OK 放下' + (act.rotate ? '　□ 轉一轉' : '') + '　○ 放回去'
+    : '🎮 十字鍵選積木 → ✕/OK 拿起來';
+}
+
+/* =====================================================================
+ * 3. 三個關卡
+ * ===================================================================== */
+function resetStage(id, rotate) {
+  stage.innerHTML = '<div class="board-bg"></div><div class="tray-bg"></div><div class="tray-label">👇 積木在這裡</div>';
+  act = { id, slots: [], pieces: [], rotate, msgWrongShape: ['這個形狀不一樣喔，再找找看！', '嗯～不是這個洞洞，換一個試試！'] };
+  sel = null; held = null; hoverSlot = null;
+  document.getElementById('btn-rot').style.display = rotate ? '' : 'none';
+  updateModeTip();
+}
+
+function trayPositions(n, cols) {
+  const x0 = 630, y0 = 10, W = 360, H = 540;
+  cols = cols || (n <= 3 ? 1 : n <= 6 ? 2 : 3);
+  const rows = Math.ceil(n / cols);
+  const pos = [];
+  for (let i = 0; i < n; i++) {
+    const c = i % cols, r = Math.floor(i / cols);
+    pos.push({ x: x0 + W * (c + 0.5) / cols, y: y0 + 50 + (H - 70) * (r + 0.5) / rows });
+  }
+  return pos;
+}
+
+/* ---------- 第 1 關：形狀投入箱（參考 GCompris「Complete the puzzle」與實體形狀盒） ---------- */
+function buildSorter() {
+  const lvl = save.age;
+  resetStage('sorter', lvl === 2);
+  const pool = lvl === 1 ? ['circle', 'square', 'triangle', 'star', 'heart'] : Object.keys(SORTER_SHAPES);
+  const kinds = shuffle(pool.slice()).slice(0, lvl === 1 ? 3 : 5);
+  // 木頭盒子
+  const box = document.createElement('div');
+  box.style.cssText = 'position:absolute;left:40px;top:70px;width:540px;height:440px;border-radius:30px;background:linear-gradient(160deg,#fcd9a8,#e9a865);border:8px solid #b45309;box-shadow:inset 0 -14px 0 rgba(120,53,15,0.25),0 12px 0 #92400e;';
+  stage.appendChild(box);
+  const lid = document.createElement('div');
+  lid.style.cssText = 'position:absolute;left:40px;top:28px;width:540px;text-align:center;font-weight:700;font-size:24px;color:#92400e;';
+  lid.textContent = '🎁 形狀寶寶的家';
+  stage.appendChild(lid);
+
+  const holePos = kinds.length === 3
+    ? [[160, 230], [430, 230], [295, 400]]
+    : [[150, 200], [310, 200], [470, 200], [220, 390], [400, 390]];
+  kinds.forEach((k, i) => {
+    const def = SORTER_SHAPES[k];
+    addSlot({ kind: k, cx: holePos[i][0] + 10, cy: holePos[i][1], w: def.w, h: def.h, rot: 0,
+      html: shapeSVG(def, '#5b2a0c', { stroke: 'rgba(0,0,0,0.25)', sw: 4, gloss: false }) });
+  });
+  const tray = trayPositions(kinds.length);
+  shuffle(kinds.slice()).forEach((k, i) => {
+    const def = SORTER_SHAPES[k];
+    let rot = 0;
+    if (lvl === 2 && def.sym !== 0) {
+      const opts = [90, 180, 270].filter(r => def.sym === 360 || r % def.sym !== 0);
+      rot = opts.length ? pick(opts) : 0;
+    }
+    addPiece({ kind: k, sym: def.sym, rot, w: def.w, h: def.h, homeX: tray[i].x, homeY: tray[i].y, trayScale: kinds.length > 3 ? 0.85 : 1,
+      html: shapeSVG(def, PIECE_COLORS[i % PIECE_COLORS.length], { gid: 'p' + i }) });
+  });
+  act.msgWrongShape = ['這個形狀不一樣喔，再找找看！', '形狀寶寶說：這不是我的家～', '嗯～換一個洞洞試試看！'];
+  act.onDone = () => celebrate('🎁', '全部放進去了！', '形狀寶寶都回家囉！');
+  say(lvl === 1 ? '把形狀寶寶放進一樣形狀的洞洞裡！' : '把形狀寶寶放進洞洞裡！有的歪歪的，要先點一下轉一轉喔！');
+}
+
+/* ---------- 第 2 關：動物拼圖（參考 GCompris puzzle / headbreaker 的吸附概念） ---------- */
+function loadEmojiImage(e) {
+  return new Promise(resolve => {
+    const code = FLUENT_MAP[e];
+    if (!code || fluentOffline) return resolve(null);
+    const img = new Image();
+    const timer = setTimeout(() => resolve(null), 2500);
+    img.onload = () => { clearTimeout(timer); resolve(img); };
+    img.onerror = () => { clearTimeout(timer); resolve(null); };
+    img.src = FLUENT_CDNS[0] + code + '.webp';
+  });
+}
+async function drawScene(scene) {
+  const W = 480, H = 360;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  const grad = g.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, scene.bg[0]); grad.addColorStop(1, scene.bg[1]);
+  g.fillStyle = grad; g.fillRect(0, 0, W, H);
+  g.fillStyle = 'rgba(255,255,255,0.25)';
+  g.beginPath(); g.ellipse(W / 2, H + 40, W * 0.7, 120, 0, 0, Math.PI * 2); g.fill();
+  const imgs = await Promise.all(scene.items.map(it => loadEmojiImage(it[0])));
+  scene.items.forEach((it, i) => {
+    const [e, x, y, s] = it;
+    if (imgs[i]) g.drawImage(imgs[i], x - s / 2, y - s / 2, s, s);
+    else {
+      g.font = `${Math.round(s * 0.85)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
+      g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(e, x, y);
+    }
+  });
+  return cv;
+}
+let jigsawLast = -1;
+async function buildJigsaw() {
+  const lvl = save.age;
+  resetStage('jigsaw', false);
+  let idx; do { idx = Math.floor(Math.random() * JIGSAW_SCENES.length); } while (idx === jigsawLast && JIGSAW_SCENES.length > 1);
+  jigsawLast = idx;
+  const scene = JIGSAW_SCENES[idx];
+  const token = act;
+  say('把拼圖一片一片放回框框裡，看看是什麼動物！');
+  const src = await drawScene(scene);
+  if (act !== token) return;  // 等圖片時已經換關了
+  const cols = lvl === 1 ? 2 : 3, rows = lvl === 1 ? 2 : 3;
+  const W = 480, H = 360, cw = W / cols, ch = H / rows;
+  const ox = 310 - W / 2, oy = 280 - H / 2;
+  // 淡淡的參考圖（幼幼比較清楚，大班比較淡）
+  const ghost = document.createElement('canvas');
+  ghost.width = W; ghost.height = H;
+  ghost.getContext('2d').drawImage(src, 0, 0);
+  ghost.style.cssText = `position:absolute;left:${ox}px;top:${oy}px;width:${W}px;height:${H}px;border-radius:18px;opacity:${lvl === 1 ? 0.32 : 0.14};filter:grayscale(0.4);`;
+  stage.appendChild(ghost);
+  const frame = document.createElement('div');
+  frame.style.cssText = `position:absolute;left:${ox - 10}px;top:${oy - 10}px;width:${W + 20}px;height:${H + 20}px;border-radius:26px;border:8px solid #fbbf24;pointer-events:none;`;
+  stage.appendChild(frame);
+
+  const cells = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) cells.push({ r, c });
+  cells.forEach(({ r, c }) => {
+    addSlot({ kind: `cell-${r}-${c}`, cx: ox + cw * (c + 0.5), cy: oy + ch * (r + 0.5), w: cw, h: ch, rot: 0,
+      html: `<div style="width:100%;height:100%;border:3px dashed rgba(100,116,139,0.55);border-radius:12px"></div>` });
+  });
+  const tray = trayPositions(cells.length, lvl === 1 ? 2 : 3);
+  shuffle(cells.slice()).forEach(({ r, c }, i) => {
+    const pc = document.createElement('canvas');
+    pc.width = cw; pc.height = ch;
+    pc.getContext('2d').drawImage(src, c * cw, r * ch, cw, ch, 0, 0, cw, ch);
+    pc.style.border = '4px solid #fff';
+    pc.style.boxShadow = '0 6px 0 rgba(0,0,0,0.18)';
+    addPiece({ kind: `cell-${r}-${c}`, sym: 0, rot: 0, w: cw, h: ch, homeX: tray[i].x, homeY: tray[i].y,
+      trayScale: lvl === 1 ? 0.62 : 0.6, node: pc });
+  });
+  act.msgWrongShape = ['這片好像不是放這裡喔，看看圖案再試試！', '嗯～換個位置看看！'];
+  act.onDone = () => celebrate(scene.icon, `是${scene.name}！`, `拼圖完成了！是一隻${scene.name}！`.replace('一隻火箭', '一台火箭'));
+  if (remoteMode) autoSelectNext();
+}
+
+/* ---------- 第 3 關：寶寶七巧板（參考 GCompris「Baby tangram」） ---------- */
+let tangramLast = {};
+function buildTangram() {
+  const lvl = save.age;
+  resetStage('tangram', lvl === 2);
+  const list = TANGRAMS[lvl];
+  let idx; do { idx = Math.floor(Math.random() * list.length); } while (idx === tangramLast[lvl] && list.length > 1);
+  tangramLast[lvl] = idx;
+  const puz = list[idx];
+  // 算出整個圖形的外框，置中在板子上
+  const boxes = puz.parts.map(p => {
+    const k = TAN_KINDS[p.k];
+    const rw = p.r % 180 ? k.h : k.w, rh = p.r % 180 ? k.w : k.h;
+    return { ...p, rw, rh };
+  });
+  const minX = Math.min(...boxes.map(b => b.x)), maxX = Math.max(...boxes.map(b => b.x + b.rw));
+  const minY = Math.min(...boxes.map(b => b.y)), maxY = Math.max(...boxes.map(b => b.y + b.rh));
+  const ox = 310 - (maxX - minX) * U / 2 - minX * U;
+  const oy = 290 - (maxY - minY) * U / 2 - minY * U;
+
+  const title = document.createElement('div');
+  title.style.cssText = 'position:absolute;left:10px;top:30px;width:600px;text-align:center;font-size:26px;font-weight:700;color:#0f766e;';
+  title.textContent = '🔍 拼出黑黑的影子';
+  stage.appendChild(title);
+
+  boxes.forEach(b => {
+    const k = TAN_KINDS[b.k];
+    addSlot({ kind: b.k, cx: ox + (b.x + b.rw / 2) * U, cy: oy + (b.y + b.rh / 2) * U, w: k.w * U, h: k.h * U, rot: b.r,
+      html: shapeSVG(k, '#334155', { stroke: lvl === 1 ? 'rgba(255,255,255,0.9)' : '#334155', sw: lvl === 1 ? 4 : 2, dash: lvl === 1 ? '10 8' : null, gloss: false }) });
+  });
+  const tray = trayPositions(boxes.length, boxes.length > 3 ? 2 : 1);
+  shuffle(boxes.slice()).forEach((b, i) => {
+    const k = TAN_KINDS[b.k];
+    let rot = b.r;
+    if (lvl === 2 && k.sym !== 0) {
+      const opts = [0, 90, 180, 270].filter(r => (((r - b.r) % k.sym) + k.sym) % k.sym !== 0);
+      if (opts.length) rot = pick(opts);
+    }
+    addPiece({ kind: b.k, sym: k.sym, rot, w: k.w * U, h: k.h * U, homeX: tray[i].x, homeY: tray[i].y,
+      trayScale: boxes.length > 3 ? 0.6 : 0.75, html: shapeSVG(k, PIECE_COLORS[(i * 3 + idx) % PIECE_COLORS.length], { gid: 't' + i }) });
+  });
+  act.msgWrongShape = ['這塊積木的形狀不一樣喔！', '再找找看，哪個影子跟它一樣？'];
+  act.onDone = () => celebrate(puz.icon, `是${puz.name}！`, `你用積木拼出了${puz.name}！`);
+  say(lvl === 1 ? '用積木把黑黑的影子填滿！拼拼看會變成什麼？' : '用積木把影子填滿！積木歪歪的，要點一下轉一轉喔！');
+  if (remoteMode) autoSelectNext();
+}
+
+/* =====================================================================
+ * 4. 畫面流程：選單 / 遊戲 / 過關
+ * ===================================================================== */
+const BUILDERS = { sorter: buildSorter, jigsaw: buildJigsaw, tangram: buildTangram };
+let currentAct = null;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  if (id) document.getElementById(id).classList.add('on');
+}
+function startActivity(id) {
+  ensureAudio();
+  currentAct = id;
+  document.getElementById('celebrate').classList.remove('on');
+  showScreen('play');
+  fitStage();
+  BUILDERS[id]();
+  if (remoteMode) autoSelectNext();
+}
+function nextRound() { startActivity(currentAct); }
+function goMenu() {
+  stopSpeech();
+  act = null; sel = null; held = null;
+  document.getElementById('celebrate').classList.remove('on');
+  showScreen('menu');
+  refreshMenu();
+  setFocus(document.querySelector(`#menu .fbtn[data-act="${currentAct || 'sorter'}"]`) || document.querySelector('#menu .fbtn'));
+  say('想玩哪一個積木遊戲呢？');
+}
+function celebrate(art, title, voice) {
+  save.stars[act.id] = (save.stars[act.id] || 0) + 1;
+  persist();
+  refreshMenu();
+  sfx.win();
+  confetti(140);
+  document.getElementById('celeb-art').textContent = art;
+  document.getElementById('celeb-title').textContent = title;
+  document.getElementById('celeb-sub').textContent = `獲得一顆星星 ⭐（這個遊戲已經拿到 ${save.stars[act.id]} 顆）`;
+  document.getElementById('celebrate').classList.add('on');
+  setFocus(document.querySelector('#celebrate .fbtn'));
+  say(voice + ' 你好棒！');
+}
+function refreshMenu() {
+  ['sorter', 'jigsaw', 'tangram'].forEach(k => document.getElementById('st-' + k).textContent = `⭐ ${save.stars[k] || 0}`);
+  document.getElementById('star-total').textContent = Object.values(save.stars).reduce((a, b) => a + b, 0);
+  document.getElementById('age-btn').textContent = save.age === 1 ? '🌱 3-4歲幼幼' : '🚀 5-6歲大班';
+}
+function toggleAge() {
+  ensureAudio();
+  save.age = save.age === 1 ? 2 : 1;
+  persist(); refreshMenu();
+  say(save.age === 1 ? '換成幼幼模式：積木比較少，也不用轉！' : '換成大班模式：積木比較多，有的要轉一轉！');
+  if (document.getElementById('play').classList.contains('on')) startActivity(currentAct);
+}
+
+/* 選單 / 過關畫面的遙控器焦點 */
+let focusEl = null;
+function setFocus(el) {
+  document.querySelectorAll('.fbtn.focus').forEach(b => b.classList.remove('focus'));
+  focusEl = el;
+  if (el) el.classList.add('focus');
+}
+function menuButtons() {
+  if (document.getElementById('celebrate').classList.contains('on')) return [...document.querySelectorAll('#celebrate .fbtn')];
+  if (document.getElementById('menu').classList.contains('on')) return [...document.querySelectorAll('#menu .fbtn')];
+  return [];
+}
+function menuDir(dir) {
+  const list = menuButtons();
+  if (!list.length) return false;
+  if (!focusEl || !list.includes(focusEl)) { setFocus(list[0]); sfx.move(); return true; }
+  const i = list.indexOf(focusEl);
+  const step = (dir === 'right' || dir === 'down') ? 1 : -1;
+  setFocus(list[(i + step + list.length) % list.length]); sfx.move();
+  return true;
+}
+
+/* 統一的輸入處理（鍵盤 / 遙控器 / 手把） */
+function onDir(dir) {
+  ensureAudio();
+  if (menuDir(dir)) return;
+  remoteDir(dir);
+}
+function onOK() {
+  ensureAudio();
+  const list = menuButtons();
+  if (list.length) { (focusEl && list.includes(focusEl) ? focusEl : list[0]).click(); return; }
+  remoteOK();
+}
+function onBack() {
+  if (document.getElementById('celebrate').classList.contains('on')) { goMenu(); return; }
+  if (held) { dropHeld(); return; }
+  if (document.getElementById('play').classList.contains('on')) { goMenu(); return; }
+  location.href = '../';
+}
+window.addEventListener('keydown', (e) => {
+  const map = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' };
+  if (map[e.key]) { e.preventDefault(); onDir(map[e.key]); }
+  else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOK(); }
+  else if (e.key === 'Escape' || e.key === 'Backspace') { e.preventDefault(); onBack(); }
+  else if (e.key === 'r' || e.key === 'R') { remoteMode = true; rotateCurrent(); updateModeTip(); }
+  else if (e.key === 'h' || e.key === 'H') showHint();
+});
+
+const padState = {};
+function pollPads() {
+  let pads = [];
+  try { pads = navigator.getGamepads ? navigator.getGamepads() : []; } catch (e) { return; }
+  for (const gp of pads) {
+    if (!gp) continue;
+    const st = padState[gp.index] || (padState[gp.index] = { prev: {}, dir: null, next: 0 });
+    const pr = i => !!(gp.buttons[i] && gp.buttons[i].pressed);
+    const now = {}; [0, 1, 2, 3, 9, 12, 13, 14, 15].forEach(i => now[i] = pr(i));
+    const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0;
+    let dir = null;
+    if (now[12] || ay < -0.6) dir = 'up'; else if (now[13] || ay > 0.6) dir = 'down';
+    else if (now[14] || ax < -0.6) dir = 'left'; else if (now[15] || ax > 0.6) dir = 'right';
+    const t = performance.now();
+    if (dir && dir !== st.dir) { onDir(dir); st.next = t + 420; }
+    else if (dir && t > st.next) { onDir(dir); st.next = t + 200; }
+    st.dir = dir;
+    const edge = i => now[i] && !st.prev[i];
+    if (edge(0)) onOK();
+    if (edge(1)) onBack();
+    if (edge(2)) { remoteMode = true; rotateCurrent(); updateModeTip(); }
+    if (edge(3)) showHint();
+    if (edge(9)) onOK();
+    st.prev = now;
+  }
+  requestAnimationFrame(pollPads);
+}
+window.addEventListener('gamepadconnected', () => toast('🎮 手把已連線！十字鍵選積木、✕ 拿起來 / 放下、□ 轉一轉'));
+requestAnimationFrame(pollPads);
+
+/* =====================================================================
+ * 5. 特效：小星星爆開、紙花
+ * ===================================================================== */
+const cvs = document.getElementById('confetti');
+const cctx = cvs.getContext('2d');
+let parts = [];
+function resizeCvs() { cvs.width = innerWidth; cvs.height = innerHeight; }
+addEventListener('resize', resizeCvs); resizeCvs();
+const COLORS = ['#f43f5e', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#facc15'];
+function confetti(n = 100, x = innerWidth / 2, y = innerHeight / 2, power = 20) {
+  for (let i = 0; i < n; i++) parts.push({ x, y, vx: (Math.random() - 0.5) * power, vy: (Math.random() - 0.85) * power - 3,
+    s: Math.random() * 10 + 6, c: COLORS[i % COLORS.length], r: Math.random() * 360, vr: (Math.random() - 0.5) * 14, life: 100 });
+}
+function burst(lx, ly) {
+  const r = stage.getBoundingClientRect();
+  confetti(26, r.left + lx * scale, r.top + ly * scale, 11);
+}
+(function loop() {
+  cctx.clearRect(0, 0, cvs.width, cvs.height);
+  parts.forEach(p => {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.36; p.r += p.vr; p.life -= 1.3;
+    cctx.save(); cctx.translate(p.x, p.y); cctx.rotate(p.r * Math.PI / 180); cctx.fillStyle = p.c;
+    cctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s); cctx.restore();
+  });
+  parts = parts.filter(p => p.life > 0);
+  requestAnimationFrame(loop);
+})();
+
+/* =====================================================================
+ * 6. Fluent Emoji 3D（與奇奇島相同：畫面 emoji 自動換成 3D 圖，沒網路時保留原本 emoji）
+ * ===================================================================== */
+const FLUENT_MAP = {"▶":"25b6-fe0f","☁️":"2601-fe0f","⛵":"26f5","⭐":"2b50","🌈":"1f308","🌋":"1f30b","🌙":"1f319","🌞":"1f31e","🌱":"1f331","🌲":"1f332","🌳":"1f333","🌴":"1f334","🌸":"1f338","🌼":"1f33c","🍄":"1f344","🍦":"1f366","🎁":"1f381","🎉":"1f389","🎋":"1f38b","🎮":"1f3ae","🏘️":"1f3d8-fe0f","🏝️":"1f3dd-fe0f","🏠":"1f3e0","🏰":"1f3f0","🐙":"1f419","🐚":"1f41a","🐟":"1f41f","🐠":"1f420","🐰":"1f430","🐳":"1f433","🐼":"1f43c","👆":"1f446","👇":"1f447","👩‍🏫":"1f469-200d-1f3eb","💡":"1f4a1","📋":"1f4cb","🔄":"1f504","🔊":"1f50a","🔍":"1f50d","🔺":"1f53a","🚀":"1f680","🥕":"1f955","🥚":"1f95a","🦁":"1f981","🦖":"1f996","🧩":"1f9e9","🪐":"1fa90"};
+const FLUENT_CDNS = ['https://cdn.jsdelivr.net/npm/@lobehub/fluent-emoji-3d@1.1.0/assets/', 'https://unpkg.com/@lobehub/fluent-emoji-3d@1.1.0/assets/'];
+const EMOJI_RE = /\p{Extended_Pictographic}(?:️|⃣)?(?:‍\p{Extended_Pictographic}️?)*/gu;
+let fluentOffline = false;
+const SKIP = 'script,style,svg,canvas,[data-no-fluent]';
+function feImg(e) {
+  const img = document.createElement('img');
+  img.className = 'fe'; img.alt = e; img.draggable = false;
+  let i = 0;
+  img.src = FLUENT_CDNS[0] + FLUENT_MAP[e] + '.webp';
+  img.onerror = () => { i++; if (i < FLUENT_CDNS.length) img.src = FLUENT_CDNS[i] + FLUENT_MAP[e] + '.webp'; else { fluentOffline = true; img.replaceWith(document.createTextNode(e)); } };
+  return img;
+}
+function feText(node) {
+  const t = node.nodeValue;
+  if (!t || fluentOffline) return;
+  EMOJI_RE.lastIndex = 0; if (!EMOJI_RE.test(t)) return;
+  const par = node.parentNode;
+  if (!par || par.nodeType !== 1 || par.closest(SKIP)) return;
+  EMOJI_RE.lastIndex = 0;
+  const frag = document.createDocumentFragment(); let last = 0, ch = false, m;
+  while ((m = EMOJI_RE.exec(t))) {
+    if (!FLUENT_MAP[m[0]]) continue;
+    if (m.index > last) frag.append(t.slice(last, m.index));
+    frag.append(feImg(m[0])); last = m.index + m[0].length; ch = true;
+  }
+  if (!ch) return;
+  if (last < t.length) frag.append(t.slice(last));
+  par.replaceChild(frag, node);
+}
+function feTree(root) {
+  if (!root || fluentOffline) return;
+  if (root.nodeType === 3) return feText(root);
+  if (root.nodeType !== 1 || root.closest(SKIP)) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); const list = [];
+  while (w.nextNode()) list.push(w.currentNode);
+  list.forEach(feText);
+}
+feTree(document.body);
+new MutationObserver(ms => { if (fluentOffline) return; ms.forEach(m => m.type === 'characterData' ? feText(m.target) : m.addedNodes.forEach(n => n.isConnected && feTree(n))); })
+  .observe(document.body, { childList: true, subtree: true, characterData: true });
+
+/* ---------- 啟動 ---------- */
+refreshMenu();
+showScreen('menu');
+setFocus(document.querySelector('#menu .fbtn'));
+document.getElementById('subtitle-text').textContent = '嗨！選一個積木遊戲，一起動手玩吧！';
+const q = new URLSearchParams(location.search).get('play');
+if (q && BUILDERS[q]) startActivity(q);
+</script>
+</body>
+</html>
