@@ -53,7 +53,7 @@
   #menu h1 { color: #fff; font-size: 44px; margin: 6px 0 4px; text-shadow: 0 4px 0 rgba(0,0,0,0.18); }
   #menu .sub { color: #e0f2fe; font-size: 18px; margin-bottom: 22px; }
   .cards { display: flex; gap: 26px; flex-wrap: wrap; justify-content: center; }
-  .card { width: 260px; min-height: 250px; border-radius: 34px; border: 6px solid #fff; padding: 18px 16px; color: #fff;
+  .card { width: 230px; min-height: 250px; border-radius: 34px; border: 6px solid #fff; padding: 18px 16px; color: #fff;
     display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: 0 12px 0 rgba(0,0,0,0.18), 0 18px 30px rgba(0,0,0,0.25);
     transition: transform 0.2s cubic-bezier(.34,1.56,.64,1); position: relative; }
   .card .ic { font-size: 84px; line-height: 1; }
@@ -64,6 +64,7 @@
   .c-sorter { background: linear-gradient(160deg, #fb7185, #e11d48); }
   .c-jigsaw { background: linear-gradient(160deg, #a78bfa, #6d28d9); }
   .c-tangram { background: linear-gradient(160deg, #34d399, #0f766e); }
+  .c-3d { background: linear-gradient(160deg, #38bdf8, #1d4ed8); }
   .menu-row { display: flex; gap: 14px; margin-top: 30px; }
   .big-btn { font-size: 20px; font-weight: 700; padding: 12px 26px; border-radius: 999px; border: 4px solid #fff;
     box-shadow: 0 6px 0 rgba(0,0,0,0.2); transition: transform 0.2s cubic-bezier(.34,1.56,.64,1); }
@@ -170,6 +171,11 @@
         <span class="st" id="st-tangram">⭐ 0</span>
         <span class="ic">🏠</span><span class="nm">寶寶七巧板</span>
         <span class="ds">用積木把黑影子填滿，拼出房子和小魚！</span>
+      </button>
+      <button class="card c-3d fbtn" data-act="3d" onclick="location.href='../blocks3d/'">
+        <span class="st">NEW</span>
+        <span class="ic">🏗️</span><span class="nm">3D 積木城</span>
+        <span class="ds">照樣子堆出一模一樣的 3D 積木，轉一轉從不同方向看！</span>
       </button>
     </div>
   </section>
@@ -393,6 +399,12 @@ const TANGRAMS = {
     { name: '城堡', icon: '🏰', parts: [{ k: 'roof', x: 0, y: 0, r: 0 }, { k: 'square', x: 0, y: 1, r: 0 }, { k: 'rect', x: 2, y: 2, r: 0 }, { k: 'roof', x: 4, y: 0, r: 0 }, { k: 'square', x: 4, y: 1, r: 0 }] },
     { name: '火箭', icon: '🚀', parts: [{ k: 'roof', x: 0.5, y: 0, r: 0 }, { k: 'square', x: 0.5, y: 1, r: 0 }, { k: 'tri', x: -1.5, y: 1.5, r: 270 }, { k: 'tri', x: 2.5, y: 1.5, r: 0 }] },
   ],
+  3: [
+    { name: '蝴蝶', icon: '🦋', parts: [{ k: 'tri', x: 0, y: 0, r: 270 }, { k: 'tri', x: 0, y: 2, r: 180 }, { k: 'rect', x: 2, y: 1, r: 90 }, { k: 'tri', x: 3, y: 0, r: 0 }, { k: 'tri', x: 3, y: 2, r: 90 }] },
+    { name: '機器人', icon: '🤖', parts: [{ k: 'square', x: 1, y: 0, r: 0 }, { k: 'square', x: 1, y: 2, r: 0 }, { k: 'rect', x: 0, y: 2, r: 90 }, { k: 'rect', x: 3, y: 2, r: 90 }, { k: 'rect', x: 1, y: 4, r: 90 }, { k: 'rect', x: 2, y: 4, r: 90 }] },
+    { name: '小火車', icon: '🚂', parts: [{ k: 'roof', x: 0, y: 0, r: 0 }, { k: 'square', x: 0, y: 1, r: 0 }, { k: 'rect', x: 2, y: 2, r: 0 }, { k: 'rect', x: 4, y: 2, r: 0 }, { k: 'half', x: 0, y: 3, r: 180 }, { k: 'half', x: 3, y: 3, r: 180 }] },
+    { name: '大城堡', icon: '🏰', parts: [{ k: 'roof', x: 0, y: 0, r: 0 }, { k: 'rect', x: 0.5, y: 1, r: 90 }, { k: 'square', x: 0, y: 3, r: 0 }, { k: 'tri', x: 2, y: 1, r: 270 }, { k: 'tri', x: 4, y: 1, r: 0 }, { k: 'square', x: 2, y: 3, r: 0 }, { k: 'square', x: 4, y: 3, r: 0 }] },
+  ],
 };
 
 /* 拼圖場景（用 3D 圖示組成的圖畫） */
@@ -544,7 +556,8 @@ function tryPlace(p, s) {
     p.wrong++; sfx.wrong(); wobble(p);
     say(pick(act.msgWrongShape));
     setTimeout(() => goHome(p), 350);
-    if (p.wrong >= 2) showHint(p);
+    if (p.decoy) say('咦？這一塊好像哪裡都放不進去耶！它是假的喔！');
+    else if (p.wrong >= (save.age === 3 ? 3 : 2)) showHint(p);
     return 'shape';
   }
   if (!rotOk(p, s)) {
@@ -565,7 +578,7 @@ function tryPlace(p, s) {
   sfx.place();
   burst(p.cx, p.cy);
   if (sel === p) sel = null;
-  const left = act.pieces.filter(q => !q.placed).length;
+  const left = act.pieces.filter(q => !q.placed && !q.decoy).length;
   if (left === 0) {
     setTimeout(() => act.onDone(), 650);
   } else {
@@ -617,7 +630,7 @@ function setSel(p, sound = true) {
 }
 function autoSelectNext() {
   if (!remoteMode) return;
-  const next = act.pieces.find(q => !q.placed);
+  const next = act.pieces.find(q => !q.placed && !q.decoy) || act.pieces.find(q => !q.placed);
   setSel(next || null, false);
 }
 function spatialPick(list, from, dir) {
@@ -703,9 +716,11 @@ function trayPositions(n, cols) {
 /* ---------- 第 1 關：形狀投入箱（參考 GCompris「Complete the puzzle」與實體形狀盒） ---------- */
 function buildSorter() {
   const lvl = save.age;
-  resetStage('sorter', lvl === 2);
+  resetStage('sorter', lvl >= 2);
   const pool = lvl === 1 ? ['circle', 'square', 'triangle', 'star', 'heart'] : Object.keys(SORTER_SHAPES);
-  const kinds = shuffle(pool.slice()).slice(0, lvl === 1 ? 3 : 5);
+  const all = shuffle(pool.slice());
+  const kinds = all.slice(0, [0, 3, 5, 6][lvl]);
+  const decoyKind = lvl === 3 ? all[6] : null;
   // 木頭盒子
   const box = document.createElement('div');
   box.style.cssText = 'position:absolute;left:40px;top:70px;width:540px;height:440px;border-radius:30px;background:linear-gradient(160deg,#fcd9a8,#e9a865);border:8px solid #b45309;box-shadow:inset 0 -14px 0 rgba(120,53,15,0.25),0 12px 0 #92400e;';
@@ -717,26 +732,29 @@ function buildSorter() {
 
   const holePos = kinds.length === 3
     ? [[160, 230], [430, 230], [295, 400]]
-    : [[150, 200], [310, 200], [470, 200], [220, 390], [400, 390]];
+    : kinds.length === 5 ? [[150, 200], [310, 200], [470, 200], [220, 390], [400, 390]]
+    : [[140, 200], [300, 200], [460, 200], [140, 390], [300, 390], [460, 390]];
   kinds.forEach((k, i) => {
     const def = SORTER_SHAPES[k];
     addSlot({ kind: k, cx: holePos[i][0] + 10, cy: holePos[i][1], w: def.w, h: def.h, rot: 0,
       html: shapeSVG(def, '#5b2a0c', { stroke: 'rgba(0,0,0,0.25)', sw: 4, gloss: false }) });
   });
-  const tray = trayPositions(kinds.length);
-  shuffle(kinds.slice()).forEach((k, i) => {
+  const trayKinds = decoyKind ? [...kinds, decoyKind] : kinds;
+  const tray = trayPositions(trayKinds.length, trayKinds.length > 3 ? 2 : 1);
+  shuffle(trayKinds.slice()).forEach((k, i) => {
     const def = SORTER_SHAPES[k];
     let rot = 0;
-    if (lvl === 2 && def.sym !== 0) {
+    if (lvl >= 2 && def.sym !== 0) {
       const opts = [90, 180, 270].filter(r => def.sym === 360 || r % def.sym !== 0);
       rot = opts.length ? pick(opts) : 0;
     }
-    addPiece({ kind: k, sym: def.sym, rot, w: def.w, h: def.h, homeX: tray[i].x, homeY: tray[i].y, trayScale: kinds.length > 3 ? 0.85 : 1,
+    const pc = addPiece({ kind: k, sym: def.sym, rot, w: def.w, h: def.h, homeX: tray[i].x, homeY: tray[i].y, trayScale: trayKinds.length > 5 ? 0.72 : trayKinds.length > 3 ? 0.85 : 1,
       html: shapeSVG(def, PIECE_COLORS[i % PIECE_COLORS.length], { gid: 'p' + i }) });
+    if (k === decoyKind) pc.decoy = true;
   });
   act.msgWrongShape = ['這個形狀不一樣喔，再找找看！', '形狀寶寶說：這不是我的家～', '嗯～換一個洞洞試試看！'];
   act.onDone = () => celebrate('🎁', '全部放進去了！', '形狀寶寶都回家囉！');
-  say(lvl === 1 ? '把形狀寶寶放進一樣形狀的洞洞裡！' : '把形狀寶寶放進洞洞裡！有的歪歪的，要先點一下轉一轉喔！');
+  say(['', '把形狀寶寶放進一樣形狀的洞洞裡！', '把形狀寶寶放進洞洞裡！有的歪歪的，要先點一下轉一轉喔！', '挑戰模式！形狀全部歪歪的，而且有一個形狀沒有家，找找看是哪一個！'][lvl]);
 }
 
 /* ---------- 第 2 關：動物拼圖（參考 GCompris puzzle / headbreaker 的吸附概念） ---------- */
@@ -775,22 +793,22 @@ async function drawScene(scene) {
 let jigsawLast = -1;
 async function buildJigsaw() {
   const lvl = save.age;
-  resetStage('jigsaw', false);
+  resetStage('jigsaw', lvl === 3);
   let idx; do { idx = Math.floor(Math.random() * JIGSAW_SCENES.length); } while (idx === jigsawLast && JIGSAW_SCENES.length > 1);
   jigsawLast = idx;
   const scene = JIGSAW_SCENES[idx];
   const token = act;
-  say('把拼圖一片一片放回框框裡，看看是什麼動物！');
+  say(lvl === 3 ? '挑戰模式！十六片拼圖，而且有的轉歪了，要先點一下轉正喔！' : '把拼圖一片一片放回框框裡，看看是什麼動物！');
   const src = await drawScene(scene);
   if (act !== token) return;  // 等圖片時已經換關了
-  const cols = lvl === 1 ? 2 : 3, rows = lvl === 1 ? 2 : 3;
+  const cols = [0, 2, 3, 4][lvl], rows = cols;
   const W = 480, H = 360, cw = W / cols, ch = H / rows;
   const ox = 310 - W / 2, oy = 280 - H / 2;
   // 淡淡的參考圖（幼幼比較清楚，大班比較淡）
   const ghost = document.createElement('canvas');
   ghost.width = W; ghost.height = H;
   ghost.getContext('2d').drawImage(src, 0, 0);
-  ghost.style.cssText = `position:absolute;left:${ox}px;top:${oy}px;width:${W}px;height:${H}px;border-radius:18px;opacity:${lvl === 1 ? 0.32 : 0.14};filter:grayscale(0.4);`;
+  ghost.style.cssText = `position:absolute;left:${ox}px;top:${oy}px;width:${W}px;height:${H}px;border-radius:18px;opacity:${[0, 0.32, 0.14, 0.05][lvl]};filter:grayscale(0.4);`;
   stage.appendChild(ghost);
   const frame = document.createElement('div');
   frame.style.cssText = `position:absolute;left:${ox - 10}px;top:${oy - 10}px;width:${W + 20}px;height:${H + 20}px;border-radius:26px;border:8px solid #fbbf24;pointer-events:none;`;
@@ -802,15 +820,15 @@ async function buildJigsaw() {
     addSlot({ kind: `cell-${r}-${c}`, cx: ox + cw * (c + 0.5), cy: oy + ch * (r + 0.5), w: cw, h: ch, rot: 0,
       html: `<div style="width:100%;height:100%;border:3px dashed rgba(100,116,139,0.55);border-radius:12px"></div>` });
   });
-  const tray = trayPositions(cells.length, lvl === 1 ? 2 : 3);
+  const tray = trayPositions(cells.length, [0, 2, 3, 4][lvl]);
   shuffle(cells.slice()).forEach(({ r, c }, i) => {
     const pc = document.createElement('canvas');
     pc.width = cw; pc.height = ch;
     pc.getContext('2d').drawImage(src, c * cw, r * ch, cw, ch, 0, 0, cw, ch);
     pc.style.border = '4px solid #fff';
     pc.style.boxShadow = '0 6px 0 rgba(0,0,0,0.18)';
-    addPiece({ kind: `cell-${r}-${c}`, sym: 0, rot: 0, w: cw, h: ch, homeX: tray[i].x, homeY: tray[i].y,
-      trayScale: lvl === 1 ? 0.62 : 0.6, node: pc });
+    addPiece({ kind: `cell-${r}-${c}`, sym: lvl === 3 ? 360 : 0, rot: lvl === 3 ? pick([0, 90, 180, 270]) : 0, w: cw, h: ch, homeX: tray[i].x, homeY: tray[i].y,
+      trayScale: [0, 0.62, 0.6, 0.62][lvl], node: pc });
   });
   act.msgWrongShape = ['這片好像不是放這裡喔，看看圖案再試試！', '嗯～換個位置看看！'];
   act.onDone = () => celebrate(scene.icon, `是${scene.name}！`, `拼圖完成了！是一隻${scene.name}！`.replace('一隻火箭', '一台火箭'));
@@ -821,7 +839,7 @@ async function buildJigsaw() {
 let tangramLast = {};
 function buildTangram() {
   const lvl = save.age;
-  resetStage('tangram', lvl === 2);
+  resetStage('tangram', lvl >= 2);
   const list = TANGRAMS[lvl];
   let idx; do { idx = Math.floor(Math.random() * list.length); } while (idx === tangramLast[lvl] && list.length > 1);
   tangramLast[lvl] = idx;
@@ -839,7 +857,7 @@ function buildTangram() {
 
   const title = document.createElement('div');
   title.style.cssText = 'position:absolute;left:10px;top:30px;width:600px;text-align:center;font-size:26px;font-weight:700;color:#0f766e;';
-  title.textContent = '🔍 拼出黑黑的影子';
+  title.textContent = lvl === 3 ? '🔍 拼出影子（有一塊是假的！）' : '🔍 拼出黑黑的影子';
   stage.appendChild(title);
 
   boxes.forEach(b => {
@@ -847,20 +865,27 @@ function buildTangram() {
     addSlot({ kind: b.k, cx: ox + (b.x + b.rw / 2) * U, cy: oy + (b.y + b.rh / 2) * U, w: k.w * U, h: k.h * U, rot: b.r,
       html: shapeSVG(k, '#334155', { stroke: lvl === 1 ? 'rgba(255,255,255,0.9)' : '#334155', sw: lvl === 1 ? 4 : 2, dash: lvl === 1 ? '10 8' : null, gloss: false }) });
   });
-  const tray = trayPositions(boxes.length, boxes.length > 3 ? 2 : 1);
-  shuffle(boxes.slice()).forEach((b, i) => {
+  const trayBoxes = boxes.slice();
+  if (lvl === 3) {
+    const used = new Set(boxes.map(b => b.k));
+    const spare = Object.keys(TAN_KINDS).filter(k => !used.has(k));
+    trayBoxes.push({ k: spare.length ? pick(spare) : 'half', r: 0, decoy: true });
+  }
+  const tray = trayPositions(trayBoxes.length, trayBoxes.length > 6 ? 3 : trayBoxes.length > 3 ? 2 : 1);
+  shuffle(trayBoxes).forEach((b, i) => {
     const k = TAN_KINDS[b.k];
     let rot = b.r;
-    if (lvl === 2 && k.sym !== 0) {
+    if (lvl >= 2 && k.sym !== 0) {
       const opts = [0, 90, 180, 270].filter(r => (((r - b.r) % k.sym) + k.sym) % k.sym !== 0);
       if (opts.length) rot = pick(opts);
     }
-    addPiece({ kind: b.k, sym: k.sym, rot, w: k.w * U, h: k.h * U, homeX: tray[i].x, homeY: tray[i].y,
-      trayScale: boxes.length > 3 ? 0.6 : 0.75, html: shapeSVG(k, PIECE_COLORS[(i * 3 + idx) % PIECE_COLORS.length], { gid: 't' + i }) });
+    const pc = addPiece({ kind: b.decoy ? 'decoy' : b.k, sym: k.sym, rot, w: k.w * U, h: k.h * U, homeX: tray[i].x, homeY: tray[i].y,
+      trayScale: trayBoxes.length > 6 ? 0.42 : trayBoxes.length > 3 ? 0.6 : 0.75, html: shapeSVG(k, PIECE_COLORS[(i * 3 + idx) % PIECE_COLORS.length], { gid: 't' + i }) });
+    if (b.decoy) pc.decoy = true;
   });
   act.msgWrongShape = ['這塊積木的形狀不一樣喔！', '再找找看，哪個影子跟它一樣？'];
   act.onDone = () => celebrate(puz.icon, `是${puz.name}！`, `你用積木拼出了${puz.name}！`);
-  say(lvl === 1 ? '用積木把黑黑的影子填滿！拼拼看會變成什麼？' : '用積木把影子填滿！積木歪歪的，要點一下轉一轉喔！');
+  say(['', '用積木把黑黑的影子填滿！拼拼看會變成什麼？', '用積木把影子填滿！積木歪歪的，要點一下轉一轉喔！', '挑戰模式！積木很多又歪歪的，而且有一塊是用不到的喔！'][lvl]);
   if (remoteMode) autoSelectNext();
 }
 
@@ -909,13 +934,13 @@ function celebrate(art, title, voice) {
 function refreshMenu() {
   ['sorter', 'jigsaw', 'tangram'].forEach(k => document.getElementById('st-' + k).textContent = `⭐ ${save.stars[k] || 0}`);
   document.getElementById('star-total').textContent = Object.values(save.stars).reduce((a, b) => a + b, 0);
-  document.getElementById('age-btn').textContent = save.age === 1 ? '🌱 3-4歲幼幼' : '🚀 5-6歲大班';
+  document.getElementById('age-btn').textContent = ['', '🌱 3-4歲幼幼', '🚀 5-6歲大班', '🔥 挑戰 6歲+'][save.age] || '🌱 3-4歲幼幼';
 }
 function toggleAge() {
   ensureAudio();
-  save.age = save.age === 1 ? 2 : 1;
+  save.age = save.age % 3 + 1;
   persist(); refreshMenu();
-  say(save.age === 1 ? '換成幼幼模式：積木比較少，也不用轉！' : '換成大班模式：積木比較多，有的要轉一轉！');
+  say(['', '換成幼幼模式：積木比較少，也不用轉！', '換成大班模式：積木比較多，有的要轉一轉！', '挑戰模式！積木最多、全部歪歪的，還有一塊是假的喔！'][save.age]);
   if (document.getElementById('play').classList.contains('on')) startActivity(currentAct);
 }
 
@@ -1029,7 +1054,7 @@ function burst(lx, ly) {
 /* =====================================================================
  * 6. Fluent Emoji 3D（與奇奇島相同：畫面 emoji 自動換成 3D 圖，沒網路時保留原本 emoji）
  * ===================================================================== */
-const FLUENT_MAP = {"▶":"25b6-fe0f","☁️":"2601-fe0f","⛵":"26f5","⭐":"2b50","🌈":"1f308","🌋":"1f30b","🌙":"1f319","🌞":"1f31e","🌱":"1f331","🌲":"1f332","🌳":"1f333","🌴":"1f334","🌸":"1f338","🌼":"1f33c","🍄":"1f344","🍦":"1f366","🎁":"1f381","🎉":"1f389","🎋":"1f38b","🎮":"1f3ae","🏘️":"1f3d8-fe0f","🏝️":"1f3dd-fe0f","🏠":"1f3e0","🏰":"1f3f0","🐙":"1f419","🐚":"1f41a","🐟":"1f41f","🐠":"1f420","🐰":"1f430","🐳":"1f433","🐼":"1f43c","👆":"1f446","👇":"1f447","👩‍🏫":"1f469-200d-1f3eb","💡":"1f4a1","📋":"1f4cb","🔄":"1f504","🔊":"1f50a","🔍":"1f50d","🔺":"1f53a","🚀":"1f680","🥕":"1f955","🥚":"1f95a","🦁":"1f981","🦖":"1f996","🧩":"1f9e9","🪐":"1fa90"};
+const FLUENT_MAP = {"▶":"25b6-fe0f","☁️":"2601-fe0f","⛵":"26f5","⭐":"2b50","🌈":"1f308","🌋":"1f30b","🌙":"1f319","🌞":"1f31e","🌱":"1f331","🌲":"1f332","🌳":"1f333","🌴":"1f334","🌸":"1f338","🌼":"1f33c","🍄":"1f344","🍦":"1f366","🎁":"1f381","🎉":"1f389","🎋":"1f38b","🎮":"1f3ae","🏘️":"1f3d8-fe0f","🏝️":"1f3dd-fe0f","🏠":"1f3e0","🏰":"1f3f0","🐙":"1f419","🐚":"1f41a","🐟":"1f41f","🐠":"1f420","🐰":"1f430","🐳":"1f433","🐼":"1f43c","👆":"1f446","👇":"1f447","👩‍🏫":"1f469-200d-1f3eb","💡":"1f4a1","📋":"1f4cb","🔄":"1f504","🔊":"1f50a","🔍":"1f50d","🔺":"1f53a","🚀":"1f680","🥕":"1f955","🥚":"1f95a","🦁":"1f981","🦖":"1f996","🧩":"1f9e9","🪐":"1fa90","🏗️":"1f3d7-fe0f","🔥":"1f525","🚂":"1f682","🤖":"1f916","🦋":"1f98b"};
 const FLUENT_CDNS = ['https://cdn.jsdelivr.net/npm/@lobehub/fluent-emoji-3d@1.1.0/assets/', 'https://unpkg.com/@lobehub/fluent-emoji-3d@1.1.0/assets/'];
 const EMOJI_RE = /\p{Extended_Pictographic}(?:️|⃣)?(?:‍\p{Extended_Pictographic}️?)*/gu;
 let fluentOffline = false;

@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>奇奇 3D 積木城 - 照樣子蓋積木</title>
+<link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<style>
+  * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { font-family: 'Huninn', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif; letter-spacing: 0.02em; color: #1e293b;
+    background: radial-gradient(circle at 50% 30%, #bae6fd 0%, #7dd3fc 45%, #38bdf8 100%); }
+  button { font-family: inherit; cursor: pointer; }
+  img.fe { height: 1.18em; width: 1.18em; display: inline-block; vertical-align: -0.22em; object-fit: contain; pointer-events: none;
+    filter: drop-shadow(0 0.06em 0.05em rgba(0,0,0,0.18)); }
+
+  header { height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px;
+    background: rgba(15,23,42,0.5); backdrop-filter: blur(8px); border-bottom: 4px solid rgba(255,255,255,0.3); color: #fff; position: relative; z-index: 20; }
+  .grp { display: flex; gap: 10px; align-items: center; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; border: 3px solid #fff;
+    font-size: 16px; font-weight: 700; box-shadow: 0 4px 0 rgba(0,0,0,0.18); color: #fff; text-decoration: none; }
+  .amber { background: linear-gradient(#fbbf24, #f97316); }
+  .white { background: #fff; color: #334155; }
+  .green { background: linear-gradient(#34d399, #059669); }
+  .pink { background: linear-gradient(#f472b6, #e11d48); }
+
+  #subtitle { margin: 8px auto 0; width: min(900px, 94vw); background: rgba(255,255,255,0.95); border: 4px solid #fbbf24; border-radius: 999px;
+    padding: 6px 18px; display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,0.15); }
+  #subtitle .who { background: #f43f5e; color: #fff; font-size: 13px; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
+  #subtitle-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  main { position: absolute; top: 120px; bottom: 96px; left: 12px; right: 12px; display: flex; gap: 14px; }
+  .panel { position: relative; border-radius: 30px; border: 6px solid #fff; overflow: hidden; box-shadow: 0 12px 26px rgba(0,0,0,0.2); }
+  #target-panel { flex: 0 0 36%; background: linear-gradient(#fef9c3, #fde68a); }
+  #build-panel { flex: 1; background: linear-gradient(#ecfeff, #bae6fd); }
+  .panel canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .tag { position: absolute; top: 10px; left: 14px; z-index: 3; font-weight: 700; font-size: 20px; padding: 4px 14px; border-radius: 999px; border: 3px solid #fff; color: #fff; pointer-events: none; }
+  .tag.t1 { background: #f59e0b; } .tag.t2 { background: #0ea5e9; }
+  .count { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 3; background: rgba(255,255,255,0.92); border-radius: 999px;
+    padding: 4px 16px; font-weight: 700; font-size: 17px; border: 3px solid #fff; box-shadow: 0 4px 0 rgba(0,0,0,0.12); pointer-events: none; white-space: nowrap; }
+  .rotbtn { position: absolute; top: 50%; transform: translateY(-50%); z-index: 4; width: 62px; height: 62px; border-radius: 50%; border: 4px solid #fff;
+    background: rgba(15,23,42,0.55); color: #fff; font-size: 28px; box-shadow: 0 6px 0 rgba(0,0,0,0.2); }
+  .rotbtn.l { left: 10px; } .rotbtn.r { right: 10px; }
+  #landmark-tip { position: absolute; top: 12px; right: 14px; z-index: 3; font-size: 14px; font-weight: 700; color: #065f46; background: rgba(255,255,255,0.85);
+    border-radius: 999px; padding: 3px 10px; pointer-events: none; }
+
+  #toolbar { position: absolute; left: 0; right: 0; bottom: 12px; display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; z-index: 10; }
+  .tb { font-size: 19px; font-weight: 700; padding: 9px 18px; border-radius: 999px; border: 4px solid #fff; color: #fff; box-shadow: 0 6px 0 rgba(0,0,0,0.22); }
+  .tb:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.22); }
+  .tb .k { font-size: 12px; opacity: 0.85; margin-left: 3px; }
+  .tb.add { background: linear-gradient(#34d399, #059669); }
+  .tb.rem { background: linear-gradient(#fb7185, #e11d48); }
+  .tb.off { filter: grayscale(0.7) brightness(0.9); opacity: 0.6; }
+  .tb.hint { background: linear-gradient(#fde047, #f59e0b); color: #422006; }
+  .tb.new { background: linear-gradient(#a78bfa, #7c3aed); }
+  .tb.say { background: linear-gradient(#38bdf8, #0284c7); }
+  .swatch { width: 54px; height: 54px; border-radius: 16px; border: 4px solid #fff; box-shadow: 0 6px 0 rgba(0,0,0,0.22); }
+  .swatch.on { outline: 5px solid #1e293b; outline-offset: 2px; transform: scale(1.1); }
+  #palette { display: flex; gap: 10px; padding: 0 6px; }
+
+  #celebrate { position: fixed; inset: 0; z-index: 80; display: none; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(76,29,149,0.82), rgba(15,23,42,0.92)); }
+  #celebrate.on { display: flex; }
+  .celeb { background: rgba(255,255,255,0.1); border: 5px solid #fde047; border-radius: 40px; padding: 26px 40px; text-align: center; color: #fff;
+    box-shadow: 0 0 60px rgba(250,204,21,0.45); animation: pop 0.5s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes pop { from { transform: scale(0.7); opacity: 0; } to { transform: none; opacity: 1; } }
+  .celeb .art { font-size: 110px; animation: bob 0.8s ease-in-out infinite alternate; }
+  @keyframes bob { from { transform: translateY(0) rotate(-4deg); } to { transform: translateY(-12px) rotate(4deg); } }
+  .celeb h2 { font-size: 38px; color: #fde047; margin: 6px 0; }
+  .celeb .row { display: flex; gap: 14px; justify-content: center; margin-top: 16px; }
+  .big { font-size: 20px; font-weight: 700; padding: 12px 26px; border-radius: 999px; border: 4px solid #fff; box-shadow: 0 6px 0 rgba(0,0,0,0.2); }
+  .big.focus { box-shadow: 0 0 0 5px #fff, 0 0 0 11px #facc15; transform: scale(1.06); }
+
+  #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 90; }
+  #toast { position: fixed; left: 50%; top: 76px; transform: translate(-50%, -20px); opacity: 0; transition: all 0.3s; z-index: 95;
+    background: rgba(15,23,42,0.92); color: #fff; padding: 8px 18px; border-radius: 999px; border: 3px solid #fff; font-weight: 700; pointer-events: none; }
+  #toast.show { transform: translate(-50%, 0); opacity: 1; }
+  #nogl { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 99; background: #0c4a6e; color: #fff; font-size: 24px; text-align: center; padding: 30px; }
+
+  @media (max-width: 760px) { main { flex-direction: column; } #target-panel { flex: 0 0 34%; } }
+</style>
+</head>
+<body>
+  <canvas id="confetti"></canvas>
+  <div id="toast"></div>
+  <div id="nogl">😢 這台裝置的瀏覽器不支援 3D 畫面（WebGL）。<br>請改用電腦或平板的 Chrome / Edge 開啟。</div>
+
+  <header>
+    <div class="grp">
+      <a href="../" class="pill amber">🏝️ 奇奇島</a>
+      <a href="../blocks/" class="pill pink">🧩 積木工坊</a>
+      <span class="pill white">🏗️ 3D 積木城</span>
+      <span class="pill white">⭐ <span id="stars">0</span></span>
+    </div>
+    <div class="grp">
+      <button id="age-btn" class="pill green" onclick="toggleAge()">🌱 3-4歲</button>
+    </div>
+  </header>
+
+  <div id="subtitle" onclick="repeatVoice()"><span>👩‍🏫</span><span class="who">故事姐姐</span><span id="subtitle-text">照著左邊的樣子，在右邊蓋出一模一樣的積木！</span></div>
+
+  <main>
+    <div class="panel" id="target-panel">
+      <span class="tag t1">👀 照這個蓋</span>
+      <canvas id="cv-target"></canvas>
+      <div class="count" id="count-target">共 0 塊</div>
+    </div>
+    <div class="panel" id="build-panel">
+      <span class="tag t2">🏗️ 你的積木</span>
+      <span id="landmark-tip">🌳 看小樹在哪邊</span>
+      <canvas id="cv-build"></canvas>
+      <button class="rotbtn l" onclick="rotateView(-1)" title="往左轉 (Q / L1)">⟲</button>
+      <button class="rotbtn r" onclick="rotateView(1)" title="往右轉 (E / R1)">⟳</button>
+      <div class="count" id="count-build">已經放 0 塊</div>
+    </div>
+  </main>
+
+  <div id="toolbar">
+    <button class="tb add" id="tool-add" onclick="setTool('add')">➕ 放積木<span class="k">(✕/Enter)</span></button>
+    <button class="tb rem off" id="tool-rem" onclick="setTool('rem')">➖ 拿掉<span class="k">(□/X)</span></button>
+    <div id="palette"></div>
+    <button class="tb hint" onclick="showHint()">💡 提示<span class="k">(H)</span></button>
+    <button class="tb say" onclick="repeatVoice()">🔊</button>
+    <button class="tb new" onclick="newPuzzle()">🎲 新題目</button>
+  </div>
+
+  <div id="celebrate">
+    <div class="celeb">
+      <div class="art" id="celeb-art">🏰</div>
+      <h2 id="celeb-title">蓋好了！一模一樣！</h2>
+      <div id="celeb-sub">獲得一顆星星 ⭐</div>
+      <div class="row">
+        <button class="big focus" id="btn-next" style="background:linear-gradient(#34d399,#059669);color:#fff" onclick="newPuzzle()">▶ 下一題</button>
+        <button class="big" id="btn-hub" style="background:#fff;color:#334155" onclick="location.href='../blocks/'">🧩 回積木工坊</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =====================================================================
+ * 共用：音效、語音（沿用奇奇島的 Azure 雲端語音設定）、提示
+ * ===================================================================== */
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function tone(f, d = 0.2, type = 'triangle', v = 0.28, delay = 0) {
+  try {
+    ensureAudio();
+    const t0 = audioCtx.currentTime + delay;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t0);
+    g.gain.setValueAtTime(v, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + d);
+    o.connect(g); g.connect(audioCtx.destination); o.start(t0); o.stop(t0 + d);
+  } catch (e) {}
+}
+const sfx = {
+  move: () => tone(560, 0.07, 'sine', 0.12),
+  pick: () => tone(700, 0.1, 'sine', 0.2),
+  rotate: () => { tone(520, 0.08, 'sine', 0.18); tone(780, 0.1, 'sine', 0.18, 0.06); },
+  place: () => { tone(660, 0.12); tone(990, 0.18, 'triangle', 0.28, 0.08); },
+  wrong: () => tone(220, 0.22, 'sine', 0.2),
+  win: () => [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, 0.3, 'triangle', 0.32, [0, .11, .22, .33, .48, .63][i])),
+};
+
+/* ---------- 語音：瀏覽器內建（挑最自然的） + Azure 雲端（若在奇奇島設定過金鑰） ---------- */
+let voiceCfg = { engine: 'browser', key: '', region: 'eastasia', voice: 'zh-TW-HsiaoChenNeural', rate: '-15%' };
+try { Object.assign(voiceCfg, JSON.parse(localStorage.getItem('qiqi-voice-cfg') || '{}')); } catch (e) {}
+let zhVoice = null, lastSay = '', speakSeq = 0, cloudSrc = null, cloudWarned = false, sdkPromise = null;
+const ttsCache = new Map();
+
+function pickVoice() {
+  if (!('speechSynthesis' in window)) return;
+  const vs = speechSynthesis.getVoices().filter(v => /^(zh|cmn)/i.test(v.lang) && !/HK|yue/i.test(v.lang + v.name));
+  const score = v => (/TW|Taiwan|臺灣|台灣/i.test(v.lang + v.name) ? 60 : 0) + (/Natural|Neural/i.test(v.name) ? 100 : 0) + (/Google/i.test(v.name) ? 45 : 0);
+  vs.sort((a, b) => score(b) - score(a));
+  let saved = null; try { saved = localStorage.getItem('qiqi-voice-name'); } catch (e) {}
+  zhVoice = vs.find(v => v.name === saved) || vs[0] || null;
+}
+if ('speechSynthesis' in window) { speechSynthesis.onvoiceschanged = pickVoice; pickVoice(); }
+
+function cleanText(t) {
+  return String(t).replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '').replace(/\s+/g, ' ').trim();
+}
+function useCloud() { return voiceCfg.engine === 'azure' && voiceCfg.key && voiceCfg.region; }
+function stopSpeech() {
+  speakSeq++;
+  if (cloudSrc) { try { cloudSrc.stop(); } catch (e) {} cloudSrc = null; }
+  if ('speechSynthesis' in window) { try { speechSynthesis.cancel(); } catch (e) {} }
+}
+function ssml(text) {
+  const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-TW"><voice name="${voiceCfg.voice}"><prosody rate="${voiceCfg.rate}" pitch="+3%">${esc}</prosody></voice></speak>`;
+}
+async function azureBytes(body) {
+  let res;
+  try {
+    res = await fetch(`https://${voiceCfg.region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+      method: 'POST', body,
+      headers: { 'Ocp-Apim-Subscription-Key': voiceCfg.key, 'Content-Type': 'application/ssml+xml', 'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3' }
+    });
+  } catch (e) {
+    if (!sdkPromise) sdkPromise = new Promise((ok, no) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@1/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js';
+      s.onload = () => window.SpeechSDK ? ok(window.SpeechSDK) : no(new Error('SDK 載入失敗'));
+      s.onerror = () => { sdkPromise = null; no(new Error('無法連線雲端語音')); };
+      document.head.appendChild(s);
+    });
+    const SDK = await sdkPromise;
+    return new Promise((ok, no) => {
+      const cfg = SDK.SpeechConfig.fromSubscription(voiceCfg.key, voiceCfg.region);
+      cfg.speechSynthesisOutputFormat = SDK.SpeechSynthesisOutputFormat.Audio24Khz48KBitRateMonoMp3;
+      const syn = new SDK.SpeechSynthesizer(cfg, null);
+      syn.speakSsmlAsync(body, r => { syn.close(); r.reason === SDK.ResultReason.SynthesizingAudioCompleted ? ok(r.audioData) : no(new Error(r.errorDetails)); },
+        err => { syn.close(); no(new Error(String(err))); });
+    });
+  }
+  if (!res.ok) throw new Error(res.status === 401 ? '金鑰或區域不正確' : `雲端語音錯誤 ${res.status}`);
+  return res.arrayBuffer();
+}
+async function speakCloud(text, seq) {
+  const body = ssml(text);
+  let buf = ttsCache.get(body);
+  if (!buf) {
+    const bytes = await azureBytes(body);
+    ensureAudio();
+    buf = await new Promise((ok, no) => audioCtx.decodeAudioData(bytes.slice(0), ok, no));
+    ttsCache.set(body, buf);
+  }
+  if (seq !== speakSeq) return;
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf; src.connect(audioCtx.destination); src.start(); cloudSrc = src;
+}
+function speakBrowser(text) {
+  if (!('speechSynthesis' in window)) return;
+  try {
+    if (!zhVoice) pickVoice();
+    const u = new SpeechSynthesisUtterance(text);
+    if (zhVoice) { u.voice = zhVoice; u.lang = zhVoice.lang; } else u.lang = 'zh-TW';
+    const natural = zhVoice && /Natural|Neural|Google/i.test(zhVoice.name);
+    u.rate = natural ? 0.95 : 0.9; u.pitch = natural ? 1.05 : 1.18;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function say(text) {
+  lastSay = text;
+  document.getElementById('subtitle-text').textContent = text;
+  const t = cleanText(text);
+  if (!t) return;
+  stopSpeech();
+  const seq = speakSeq;
+  if (useCloud()) {
+    speakCloud(t, seq).catch(err => {
+      if (!cloudWarned) { cloudWarned = true; toast(`☁️ 雲端語音暫時不能用（${err.message}），先用內建語音`); }
+      if (seq === speakSeq) speakBrowser(t);
+    });
+  } else speakBrowser(t);
+}
+function repeatVoice() { ensureAudio(); if (lastSay) say(lastSay); }
+function toast(t, ms = 3000) {
+  const el = document.getElementById('toast');
+  el.textContent = t; el.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('show'), ms);
+}
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+
+
+/* ---------- 紙花 ---------- */
+const cvs = document.getElementById('confetti'), cctx = cvs.getContext('2d');
+let parts = [];
+function resizeCvs() { cvs.width = innerWidth; cvs.height = innerHeight; }
+addEventListener('resize', resizeCvs); resizeCvs();
+function confetti(n = 120) {
+  const C = ['#f43f5e', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#facc15'];
+  for (let i = 0; i < n; i++) parts.push({ x: innerWidth / 2, y: innerHeight / 2, vx: (Math.random() - 0.5) * 22, vy: (Math.random() - 0.85) * 22 - 3,
+    s: Math.random() * 10 + 6, c: C[i % C.length], r: Math.random() * 360, vr: (Math.random() - 0.5) * 14, life: 100 });
+}
+(function loop() {
+  cctx.clearRect(0, 0, cvs.width, cvs.height);
+  parts.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.36; p.r += p.vr; p.life -= 1.3;
+    cctx.save(); cctx.translate(p.x, p.y); cctx.rotate(p.r * Math.PI / 180); cctx.fillStyle = p.c; cctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s); cctx.restore(); });
+  parts = parts.filter(p => p.life > 0);
+  requestAnimationFrame(loop);
+})();
+
+const FLUENT_MAP = {"▶":"25b6-fe0f","☁️":"2601-fe0f","⛵":"26f5","➕":"2795","➖":"2796","⭐":"2b50","🌈":"1f308","🌋":"1f30b","🌙":"1f319","🌞":"1f31e","🌱":"1f331","🌲":"1f332","🌳":"1f333","🌴":"1f334","🌸":"1f338","🌼":"1f33c","🍄":"1f344","🍦":"1f366","🎁":"1f381","🎉":"1f389","🎋":"1f38b","🎮":"1f3ae","🎲":"1f3b2","🏆":"1f3c6","🏗️":"1f3d7-fe0f","🏘️":"1f3d8-fe0f","🏝️":"1f3dd-fe0f","🏠":"1f3e0","🏰":"1f3f0","🐙":"1f419","🐚":"1f41a","🐟":"1f41f","🐠":"1f420","🐰":"1f430","🐳":"1f433","🐼":"1f43c","👀":"1f440","👆":"1f446","👇":"1f447","👩‍🏫":"1f469-200d-1f3eb","💡":"1f4a1","📋":"1f4cb","🔄":"1f504","🔊":"1f50a","🔍":"1f50d","🔥":"1f525","🔺":"1f53a","😢":"1f622","🚀":"1f680","🥕":"1f955","🥚":"1f95a","🦁":"1f981","🦄":"1f984","🦖":"1f996","🧩":"1f9e9","🪐":"1fa90"};
+const FLUENT_CDNS = ['https://cdn.jsdelivr.net/npm/@lobehub/fluent-emoji-3d@1.1.0/assets/', 'https://unpkg.com/@lobehub/fluent-emoji-3d@1.1.0/assets/'];
+const EMOJI_RE = /\p{Extended_Pictographic}(?:️|⃣)?(?:‍\p{Extended_Pictographic}️?)*/gu;
+let fluentOffline = false;
+const SKIP = 'script,style,svg,canvas,[data-no-fluent]';
+function feImg(e) {
+  const img = document.createElement('img');
+  img.className = 'fe'; img.alt = e; img.draggable = false;
+  let i = 0;
+  img.src = FLUENT_CDNS[0] + FLUENT_MAP[e] + '.webp';
+  img.onerror = () => { i++; if (i < FLUENT_CDNS.length) img.src = FLUENT_CDNS[i] + FLUENT_MAP[e] + '.webp'; else { fluentOffline = true; img.replaceWith(document.createTextNode(e)); } };
+  return img;
+}
+function feText(node) {
+  const t = node.nodeValue;
+  if (!t || fluentOffline) return;
+  EMOJI_RE.lastIndex = 0; if (!EMOJI_RE.test(t)) return;
+  const par = node.parentNode;
+  if (!par || par.nodeType !== 1 || par.closest(SKIP)) return;
+  EMOJI_RE.lastIndex = 0;
+  const frag = document.createDocumentFragment(); let last = 0, ch = false, m;
+  while ((m = EMOJI_RE.exec(t))) {
+    if (!FLUENT_MAP[m[0]]) continue;
+    if (m.index > last) frag.append(t.slice(last, m.index));
+    frag.append(feImg(m[0])); last = m.index + m[0].length; ch = true;
+  }
+  if (!ch) return;
+  if (last < t.length) frag.append(t.slice(last));
+  par.replaceChild(frag, node);
+}
+function feTree(root) {
+  if (!root || fluentOffline) return;
+  if (root.nodeType === 3) return feText(root);
+  if (root.nodeType !== 1 || root.closest(SKIP)) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); const list = [];
+  while (w.nextNode()) list.push(w.currentNode);
+  list.forEach(feText);
+}
+feTree(document.body);
+new MutationObserver(ms => { if (fluentOffline) return; ms.forEach(m => m.type === 'characterData' ? feText(m.target) : m.addedNodes.forEach(n => n.isConnected && feTree(n))); })
+  .observe(document.body, { childList: true, subtree: true, characterData: true });
+
+
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+/* =====================================================================
+ * 1. 設定與存檔
+ *    幼幼：3x3、1 色、2-4 塊、範例和你的視角一樣
+ *    大班：3x3、2 色、4-6 塊、範例視角差 90 度（要自己轉一轉對照）
+ *    挑戰：4x4、3 色、6-9 塊、範例從背面看（差 180 度）
+ * ===================================================================== */
+const LEVELS = {
+  1: { n: 3, colors: 1, min: 2, max: 4, maxH: 2, offset: 0 },
+  2: { n: 3, colors: 2, min: 4, max: 6, maxH: 3, offset: 90 },
+  3: { n: 4, colors: 3, min: 6, max: 9, maxH: 3, offset: 180 },
+};
+const COLORS = [
+  { hex: 0xef4444, css: '#ef4444', name: '紅色' },
+  { hex: 0xfacc15, css: '#facc15', name: '黃色' },
+  { hex: 0x3b82f6, css: '#3b82f6', name: '藍色' },
+];
+const SAVE = 'qiqi-3d-v1';
+let save = { age: 1, stars: 0 };
+try {
+  const main = JSON.parse(localStorage.getItem('qiqi-island-party-v3') || '{}');
+  if (main.ageLevel === 1 || main.ageLevel === 2) save.age = main.ageLevel;
+  Object.assign(save, JSON.parse(localStorage.getItem(SAVE) || '{}'));
+} catch (e) {}
+const persist = () => { try { localStorage.setItem(SAVE, JSON.stringify(save)); } catch (e) {} };
+
+/* =====================================================================
+ * 2. 3D 場景：兩個畫布（範例 / 你的積木），共用同一種積木與底板
+ * ===================================================================== */
+let rTarget, rBuild;
+try {
+  rTarget = new THREE.WebGLRenderer({ canvas: document.getElementById('cv-target'), antialias: true, alpha: true });
+  rBuild = new THREE.WebGLRenderer({ canvas: document.getElementById('cv-build'), antialias: true, alpha: true });
+} catch (e) {
+  document.getElementById('nogl').style.display = 'flex';
+  throw e;
+}
+[rTarget, rBuild].forEach(r => { r.setPixelRatio(Math.min(devicePixelRatio, 2)); r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap; });
+
+const cubeGeo = new RoundedBoxGeometry(0.92, 0.92, 0.92, 4, 0.13);
+const mats = COLORS.map(c => new THREE.MeshStandardMaterial({ color: c.hex, roughness: 0.42, metalness: 0.02 }));
+const PLATE_TOP = 0.2;
+
+function makeWorld(n) {
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xb6d7ff, 1.6));
+  const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+  sun.position.set(4, 9, 6); sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  Object.assign(sun.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6 });
+  scene.add(sun);
+
+  // 木頭底板
+  const plate = new THREE.Mesh(new RoundedBoxGeometry(n + 1.4, 0.4, n + 1.4, 4, 0.18),
+    new THREE.MeshStandardMaterial({ color: 0xe9b77c, roughness: 0.8 }));
+  plate.position.y = 0; plate.receiveShadow = true;
+  scene.add(plate);
+  // 格子（點的地方）
+  const tiles = [];
+  const tileGeo = new RoundedBoxGeometry(0.94, 0.06, 0.94, 2, 0.03);
+  for (let x = 0; x < n; x++) for (let z = 0; z < n; z++) {
+    const m = new THREE.MeshStandardMaterial({ color: (x + z) % 2 ? 0xfef3c7 : 0xfde68a, roughness: 0.7, emissive: 0x000000 });
+    const t = new THREE.Mesh(tileGeo, m);
+    t.position.set(x - (n - 1) / 2, PLATE_TOP - 0.02, z - (n - 1) / 2);
+    t.receiveShadow = true;
+    t.userData = { col: [x, z], tile: true };
+    scene.add(t); tiles.push(t);
+  }
+  // 方向地標：左前方的小樹（兩邊都在同一個角落，方便對照方向）
+  const tree = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.35, 10), new THREE.MeshStandardMaterial({ color: 0x92400e }));
+  trunk.position.y = 0.18;
+  const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.6, 14), new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.6 }));
+  leaf.position.y = 0.6;
+  tree.add(trunk, leaf);
+  tree.traverse(o => { o.castShadow = true; });
+  tree.position.set(-(n / 2) - 0.3, PLATE_TOP, (n / 2) + 0.3);
+  scene.add(tree);
+
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+  return { scene, camera, tiles, n, cubes: [] };
+}
+
+let lvl, target, build, worldT, worldB, cursor, azBuild = 0, azShown = 0, tool = 'add', colorIdx = 0, solved = false;
+
+function placeCamera(world, az, isTarget) {
+  const r = world.n * 2.35 + 3.2;
+  const el = isTarget && lvl === 3 ? 0.95 : 0.82;
+  const a = az * Math.PI / 180;
+  world.camera.position.set(r * Math.cos(el) * Math.sin(a), r * Math.sin(el) + 0.4, r * Math.cos(el) * Math.cos(a));
+  world.camera.lookAt(0, 0.9, 0);
+}
+
+function resize() {
+  [[rTarget, worldT], [rBuild, worldB]].forEach(([r, w]) => {
+    if (!w) return;
+    const c = r.domElement;
+    const W = c.clientWidth, H = c.clientHeight;
+    if (!W || !H) return;
+    r.setSize(W, H, false);
+    w.camera.aspect = W / H;
+    w.camera.updateProjectionMatrix();
+  });
+}
+addEventListener('resize', resize);
+
+/* ---------- 積木資料：每一格是一疊顏色（由下往上） ---------- */
+const emptyGrid = n => Array.from({ length: n }, () => Array.from({ length: n }, () => []));
+
+function generateTarget() {
+  const L = LEVELS[lvl];
+  const g = emptyGrid(L.n);
+  const total = L.min + Math.floor(Math.random() * (L.max - L.min + 1));
+  const start = [Math.floor(Math.random() * L.n), Math.floor(Math.random() * L.n)];
+  const used = [start];
+  g[start[0]][start[1]].push(0);
+  let guard = 0;
+  while (count(g) < total && guard++ < 200) {
+    const [x, z] = used[Math.floor(Math.random() * used.length)];
+    if (Math.random() < 0.38 && g[x][z].length < L.maxH) { g[x][z].push(0); continue; }
+    const d = [[1, 0], [-1, 0], [0, 1], [0, -1]][Math.floor(Math.random() * 4)];
+    const nx = x + d[0], nz = z + d[1];
+    if (nx < 0 || nz < 0 || nx >= L.n || nz >= L.n) continue;
+    if (!g[nx][nz].length) used.push([nx, nz]);
+    if (g[nx][nz].length < L.maxH) g[nx][nz].push(0);
+  }
+  // 上色：每一塊隨機選顏色，但確保每種顏色都至少出現一次
+  const cells = [];
+  g.forEach((row, x) => row.forEach((st, z) => st.forEach((_, h) => cells.push([x, z, h]))));
+  cells.forEach(([x, z, h], i) => { g[x][z][h] = i < L.colors ? i : Math.floor(Math.random() * L.colors); });
+  // 把「保證每色一次」的位置打散
+  const flat = cells.map(([x, z, h]) => g[x][z][h]);
+  for (let i = flat.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [flat[i], flat[j]] = [flat[j], flat[i]]; }
+  cells.forEach(([x, z, h], i) => { g[x][z][h] = flat[i]; });
+  return g;
+}
+const count = g => g.flat().reduce((a, s) => a + s.length, 0);
+
+function cubePos(world, x, z, h) {
+  return new THREE.Vector3(x - (world.n - 1) / 2, PLATE_TOP + 0.03 + 0.46 + h * 0.94, z - (world.n - 1) / 2);
+}
+function addCubeMesh(world, x, z, h, color, drop) {
+  const m = new THREE.Mesh(cubeGeo, mats[color]);
+  m.castShadow = true; m.receiveShadow = true;
+  const p = cubePos(world, x, z, h);
+  m.position.copy(p);
+  m.userData = { col: [x, z], h, targetY: p.y };
+  if (drop) { m.position.y += 1.6; m.scale.setScalar(0.7); }
+  world.scene.add(m);
+  world.cubes.push(m);
+  return m;
+}
+function renderGrid(world, g) {
+  world.cubes.forEach(c => world.scene.remove(c));
+  world.cubes = [];
+  g.forEach((row, x) => row.forEach((st, z) => st.forEach((c, h) => addCubeMesh(world, x, z, h, c, false))));
+}
+
+/* ---------- 游標（遙控器 / 滑鼠移動時顯示的半透明積木） ---------- */
+let cur = [0, 0];
+function makeCursor() {
+  const g = new THREE.Group();
+  const ghost = new THREE.Mesh(cubeGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, emissive: 0xfacc15, emissiveIntensity: 0.4 }));
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.52, 32), new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide, transparent: true }));
+  ring.rotation.x = -Math.PI / 2;
+  g.add(ghost, ring);
+  g.userData = { ghost, ring };
+  worldB.scene.add(g);
+  return g;
+}
+function updateCursor() {
+  if (!cursor) return;
+  const [x, z] = cur;
+  const h = build[x][z].length;
+  const L = LEVELS[lvl];
+  const p = cubePos(worldB, x, z, tool === 'add' ? h : Math.max(0, h - 1));
+  cursor.userData.ghost.position.set(0, 0, 0);
+  cursor.position.copy(p);
+  cursor.userData.ring.position.y = -(p.y - PLATE_TOP - 0.02);
+  cursor.userData.ghost.visible = tool === 'add' ? h < L.maxH : h > 0;
+  cursor.userData.ghost.material.color.setHex(tool === 'add' ? COLORS[colorIdx].hex : 0xffffff);
+  cursor.userData.ghost.material.emissive.setHex(tool === 'add' ? 0xfacc15 : 0xef4444);
+}
+
+/* =====================================================================
+ * 3. 遊戲流程
+ * ===================================================================== */
+function newPuzzle() {
+  ensureAudio();
+  document.getElementById('celebrate').classList.remove('on');
+  lvl = save.age;
+  const L = LEVELS[lvl];
+  worldT = makeWorld(L.n);
+  worldB = makeWorld(L.n);
+  target = generateTarget();
+  build = emptyGrid(L.n);
+  renderGrid(worldT, target);
+  cursor = makeCursor();
+  cur = [Math.floor(L.n / 2), Math.floor(L.n / 2)];
+  azBuild = 35; azShown = azBuild;
+  colorIdx = 0; solved = false;
+  setTool('add', true);
+  buildPalette();
+  resize();
+  updateCounts();
+  updateCursor();
+  refreshHeader();
+  const tips = {
+    1: '照著左邊的樣子，在右邊的格子上蓋出一模一樣的積木！點格子就能放積木喔！',
+    2: '照著左邊蓋積木！小心，左邊是從旁邊看的，轉一轉右邊的積木，看小樹在哪裡！',
+    3: '挑戰！左邊是從後面看的，記得看小樹的位置，還要注意顏色喔！',
+  };
+  say(tips[lvl]);
+}
+
+function updateCounts() {
+  document.getElementById('count-target').textContent = `共 ${count(target)} 塊`;
+  document.getElementById('count-build').textContent = `已經放 ${count(build)} 塊`;
+}
+
+function buildPalette() {
+  const pal = document.getElementById('palette');
+  pal.innerHTML = '';
+  const L = LEVELS[lvl];
+  if (L.colors < 2) return;
+  for (let i = 0; i < L.colors; i++) {
+    const b = document.createElement('button');
+    b.className = 'swatch' + (i === colorIdx ? ' on' : '');
+    b.style.background = COLORS[i].css;
+    b.title = COLORS[i].name;
+    b.onclick = () => setColor(i);
+    pal.appendChild(b);
+  }
+}
+function setColor(i) {
+  colorIdx = i;
+  [...document.querySelectorAll('.swatch')].forEach((b, j) => b.classList.toggle('on', j === i));
+  sfx.move();
+  updateCursor();
+  say(`換成${COLORS[i].name}！`);
+}
+function nextColor() { const L = LEVELS[lvl]; if (L.colors > 1) setColor((colorIdx + 1) % L.colors); }
+
+function setTool(t, quiet) {
+  tool = t;
+  document.getElementById('tool-add').classList.toggle('off', t !== 'add');
+  document.getElementById('tool-rem').classList.toggle('off', t !== 'rem');
+  updateCursor();
+  if (!quiet) { sfx.move(); say(t === 'add' ? '放積木模式！' : '拿掉模式！點一下就能拿掉最上面的積木。'); }
+}
+
+function act(x, z, mode = tool) {
+  if (solved) return;
+  const L = LEVELS[lvl];
+  const st = build[x][z];
+  if (mode === 'add') {
+    if (st.length >= L.maxH) { sfx.wrong(); say('太高了！這一格不能再疊了喔！'); return; }
+    st.push(L.colors > 1 ? colorIdx : 0);
+    addCubeMesh(worldB, x, z, st.length - 1, st[st.length - 1], true);
+    sfx.place();
+  } else {
+    if (!st.length) { sfx.wrong(); return; }
+    st.pop();
+    const idx = worldB.cubes.findIndex(c => c.userData.col[0] === x && c.userData.col[1] === z && c.userData.h === st.length);
+    if (idx >= 0) { worldB.scene.remove(worldB.cubes[idx]); worldB.cubes.splice(idx, 1); }
+    sfx.rotate();
+  }
+  clearHint();
+  updateCounts();
+  updateCursor();
+  check();
+}
+
+function same(a, b) {
+  for (let x = 0; x < a.length; x++) for (let z = 0; z < a.length; z++) {
+    if (a[x][z].length !== b[x][z].length) return false;
+    for (let h = 0; h < a[x][z].length; h++) if (a[x][z][h] !== b[x][z][h]) return false;
+  }
+  return true;
+}
+function check() {
+  const n = count(build), t = count(target);
+  if (same(build, target)) {
+    solved = true;
+    save.stars++; persist(); refreshHeader();
+    setTimeout(() => {
+      sfx.win(); confetti(150);
+      document.getElementById('celeb-art').textContent = pick(['🏰', '🏗️', '🎉', '🏆', '🦄']);
+      document.getElementById('celeb-sub').textContent = `獲得一顆星星 ⭐（總共 ${save.stars} 顆）`;
+      document.getElementById('celebrate').classList.add('on');
+      focusIdx = 0; paintFocus();
+      say('哇！蓋得一模一樣！你是小小建築師！');
+    }, 500);
+  } else if (n === t) {
+    say('數量一樣多了！可是有地方不一樣，仔細比一比，或按提示看看！');
+  } else if (n > t) {
+    say('積木太多囉！左邊只有' + t + '塊，拿掉一些看看！');
+  }
+}
+
+/* 提示：找出第一個不一樣的格子，讓它發亮 */
+let hintTile = null, hintT = 0;
+function clearHint() { if (hintTile) { hintTile.material.emissive.setHex(0x000000); hintTile = null; } }
+function showHint() {
+  ensureAudio();
+  clearHint();
+  const n = target.length;
+  for (let x = 0; x < n; x++) for (let z = 0; z < n; z++) {
+    const a = target[x][z], b = build[x][z];
+    let diff = a.length !== b.length;
+    for (let h = 0; !diff && h < a.length; h++) if (a[h] !== b[h]) diff = true;
+    if (!diff) continue;
+    hintTile = worldB.tiles.find(t => t.userData.col[0] === x && t.userData.col[1] === z);
+    hintT = performance.now();
+    cur = [x, z]; updateCursor();
+    if (b.length > a.length) say(`發亮的這一格積木太多了，要剩下${a.length}塊！`);
+    else if (LEVELS[lvl].colors > 1 && a.length) say(`發亮的這一格要疊${a.length}塊，從下面數起來是${a.map(c => COLORS[c].name).join('、')}！`);
+    else say(a.length ? `發亮的這一格要疊${a.length}塊積木！` : '發亮的這一格不用放積木喔！');
+    return;
+  }
+}
+
+/* 轉視角（每次 90 度，讓孩子練習從不同方向看） */
+function rotateView(dir) {
+  ensureAudio();
+  azBuild += dir * 90;
+  sfx.rotate();
+}
+
+function refreshHeader() {
+  document.getElementById('stars').textContent = save.stars;
+  document.getElementById('age-btn').textContent = ['', '🌱 3-4歲幼幼', '🚀 5-6歲大班', '🔥 挑戰 6歲+'][save.age];
+}
+window.toggleAge = () => { save.age = save.age % 3 + 1; persist(); newPuzzle(); };
+Object.assign(window, { newPuzzle, setTool, showHint, rotateView });
+
+/* =====================================================================
+ * 4. 輸入：點一點 / 拖曳轉視角、鍵盤、遙控器、手把
+ * ===================================================================== */
+const ray = new THREE.Raycaster();
+function pickCol(e) {
+  const c = rBuild.domElement.getBoundingClientRect();
+  const v = new THREE.Vector2(((e.clientX - c.left) / c.width) * 2 - 1, -((e.clientY - c.top) / c.height) * 2 + 1);
+  ray.setFromCamera(v, worldB.camera);
+  const hits = ray.intersectObjects([...worldB.cubes, ...worldB.tiles], false);
+  return hits.length ? hits[0].object.userData.col : null;
+}
+let down = null;
+const bc = rBuild.domElement;
+bc.addEventListener('pointerdown', e => { ensureAudio(); bc.setPointerCapture(e.pointerId); down = { x: e.clientX, az: azBuild, moved: false }; });
+bc.addEventListener('pointermove', e => {
+  if (down) {
+    const dx = e.clientX - down.x;
+    if (Math.abs(dx) > 8) down.moved = true;
+    if (down.moved) azBuild = down.az - dx * 0.45;
+    return;
+  }
+  const col = pickCol(e);
+  if (col && (col[0] !== cur[0] || col[1] !== cur[1])) { cur = col; updateCursor(); }
+});
+bc.addEventListener('pointerup', e => {
+  if (!down) return;
+  const wasTap = !down.moved;
+  down = null;
+  if (!wasTap) return;
+  const col = pickCol(e);
+  if (col) { cur = col; act(col[0], col[1]); }
+});
+
+// 方向鍵依照目前視角換算成「往前/後/左/右」
+function moveCursor(dir) {
+  const n = LEVELS[lvl].n;
+  const quarter = ((Math.round(azShown / 90) % 4) + 4) % 4;
+  let v = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
+  for (let i = 0; i < quarter; i++) v = [v[1], -v[0]];
+  cur = [Math.max(0, Math.min(n - 1, cur[0] + v[0])), Math.max(0, Math.min(n - 1, cur[1] + v[1]))];
+  sfx.move();
+  updateCursor();
+}
+
+let focusIdx = 0;
+function celebOn() { return document.getElementById('celebrate').classList.contains('on'); }
+function paintFocus() { ['btn-next', 'btn-hub'].forEach((id, i) => document.getElementById(id).classList.toggle('focus', i === focusIdx)); }
+
+function onDir(d) {
+  ensureAudio();
+  if (celebOn()) { focusIdx = (d === 'left' || d === 'up') ? 0 : 1; paintFocus(); sfx.move(); return; }
+  moveCursor(d);
+}
+function onOK() {
+  ensureAudio();
+  if (celebOn()) { document.getElementById(focusIdx ? 'btn-hub' : 'btn-next').click(); return; }
+  act(cur[0], cur[1], 'add');
+}
+function onRemove() { ensureAudio(); if (!celebOn()) act(cur[0], cur[1], 'rem'); }
+function onBack() { location.href = '../blocks/'; }
+
+addEventListener('keydown', e => {
+  const m = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+  const k = e.key.toLowerCase();
+  if (m[e.key]) { e.preventDefault(); onDir(m[e.key]); }
+  else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOK(); }
+  else if (k === 'x' || e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); onRemove(); }
+  else if (k === 'c') nextColor();
+  else if (k === 'q') rotateView(-1);
+  else if (k === 'e') rotateView(1);
+  else if (k === 'h') showHint();
+  else if (e.key === 'Escape') onBack();
+});
+
+const pads = {};
+function pollPads() {
+  let list = [];
+  try { list = navigator.getGamepads ? navigator.getGamepads() : []; } catch (e) { return; }
+  for (const gp of list) {
+    if (!gp) continue;
+    const st = pads[gp.index] || (pads[gp.index] = { prev: {}, dir: null, next: 0 });
+    const now = {}; [0, 1, 2, 3, 4, 5, 9, 12, 13, 14, 15].forEach(i => now[i] = !!(gp.buttons[i] && gp.buttons[i].pressed));
+    const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0, rx = gp.axes[2] || 0;
+    let dir = null;
+    if (now[12] || ay < -0.6) dir = 'up'; else if (now[13] || ay > 0.6) dir = 'down';
+    else if (now[14] || ax < -0.6) dir = 'left'; else if (now[15] || ax > 0.6) dir = 'right';
+    const t = performance.now();
+    if (dir && dir !== st.dir) { onDir(dir); st.next = t + 400; } else if (dir && t > st.next) { onDir(dir); st.next = t + 200; }
+    st.dir = dir;
+    if (Math.abs(rx) > 0.3) azBuild += rx * 2.2;     // 右搖桿自由轉視角
+    const edge = i => now[i] && !st.prev[i];
+    if (edge(0)) onOK();          // ✕ / A 放積木
+    if (edge(2)) onRemove();      // □ / X 拿掉
+    if (edge(3)) nextColor();     // △ / Y 換顏色
+    if (edge(4)) rotateView(-1);  // L1
+    if (edge(5)) rotateView(1);   // R1
+    if (edge(9)) showHint();      // OPTIONS / START 提示
+    if (edge(1)) onBack();        // ○ / B 返回
+    st.prev = now;
+  }
+}
+addEventListener('gamepadconnected', () => toast('🎮 手把已連線！十字鍵移動、✕ 放積木、□ 拿掉、△ 換顏色、L1/R1 轉視角'));
+
+/* =====================================================================
+ * 5. 畫面更新
+ * ===================================================================== */
+let tAuto = 0;
+function frame(t) {
+  requestAnimationFrame(frame);
+  pollPads();
+  if (!worldB) return;
+  azShown += (azBuild - azShown) * 0.15;
+  placeCamera(worldB, azShown, false);
+  // 範例：幼幼跟著你轉；大班差 90 度；挑戰固定從背面看
+  const L = LEVELS[lvl];
+  const azT = lvl === 3 ? 35 + L.offset : azShown + L.offset;
+  placeCamera(worldT, azT, true);
+  // 掉落動畫
+  worldB.cubes.forEach(c => {
+    const ty = c.userData.targetY;
+    if (Math.abs(c.position.y - ty) > 0.001) c.position.y += (ty - c.position.y) * 0.25;
+    if (c.scale.x < 1) c.scale.setScalar(Math.min(1, c.scale.x + 0.06));
+  });
+  // 游標呼吸 & 提示閃爍
+  if (cursor) cursor.userData.ring.material.opacity = 0.6 + 0.4 * Math.sin(t / 200);
+  if (hintTile) hintTile.material.emissive.setHex(Math.sin((t - hintT) / 140) > 0 ? 0xf59e0b : 0x000000);
+  rTarget.render(worldT.scene, worldT.camera);
+  rBuild.render(worldB.scene, worldB.camera);
+}
+
+newPuzzle();
+requestAnimationFrame(() => { resize(); requestAnimationFrame(frame); });
+window.__qiqi3d = { get target() { return target; }, get build() { return build; }, act: (x, z, m) => act(x, z, m), get solved() { return solved; }, get lvl() { return lvl; }, get azShown() { return azShown; } };
+</script>
+</body>
+</html>

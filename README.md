@@ -6,7 +6,9 @@
 
 ![遊戲畫面預覽](docs/preview.png)
 
-🧩 **新！奇奇積木工坊：https://pitty0574.github.io/qiqi-island-party/blocks/**
+🧩 **奇奇積木工坊：https://pitty0574.github.io/qiqi-island-party/blocks/**
+
+🏗️ **新！3D 積木城：https://pitty0574.github.io/qiqi-island-party/blocks3d/**
 
 ## 特色
 
@@ -27,6 +29,22 @@
 | 🔺 形狀投入箱 | 形狀辨識、對準方向 | 3 個形狀，不用轉 | 5 個形狀，要先轉對方向 |
 | 🦁 動物拼圖 | 部分與整體、位置關係 | 4 片，參考圖較清楚 | 9 片，參考圖很淡 |
 | 🏠 寶寶七巧板 | 形狀組合、空間拼合 | 2–3 塊，影子有虛線分隔 | 3–5 塊，要旋轉、無分隔線 |
+
+**🔥 挑戰（6 歲以上）**：形狀箱 6 洞全歪＋1 個干擾形狀；拼圖 16 片且會轉歪、參考圖幾乎看不到；七巧板最多 7 塊（蝴蝶、機器人、小火車、大城堡）＋1 塊用不到的干擾積木。
+
+## 🏗️ 3D 積木城（心智旋轉）
+
+左邊是 3D 範例，在右邊格子上堆出一模一樣的積木。底板角落的小樹是方向地標，幫助孩子對照方向。
+
+| 難度 | 格子 | 顏色 | 積木數 | 範例視角 |
+|---|---|---|---|---|
+| 🌱 幼幼 | 3×3 | 1 色 | 2–4 塊 | 跟你一樣 |
+| 🚀 大班 | 3×3 | 2 色 | 4–6 塊 | 差 90 度（要自己轉來對照） |
+| 🔥 挑戰 | 4×4 | 3 色 | 6–9 塊 | 從背面看（差 180 度） |
+
+操作：點格子放積木、左右拖曳轉視角；鍵盤方向鍵移動（會依視角自動換算）、Enter 放、X 拿掉、C 換色、Q/E 轉視角、H 提示；手把 ✕ 放、□ 拿掉、△ 換色、L1/R1 轉視角、右搖桿自由旋轉。
+
+![3D 積木城預覽](docs/3d-preview.png)
 
 遙控器 / 手把：十字鍵選積木 → ✕/OK 拿起來 → 十字鍵移到洞上 → □/R 轉一轉 → ✕/OK 放下（○/Esc 放回去）。
 
@@ -53,11 +71,13 @@
 
 - [Microsoft Fluent Emoji 3D](https://github.com/lobehub/fluent-emoji)（MIT）— 3D 立體圖示
 - [粉圓體 Huninn](https://github.com/justfont/Huninn)（OFL）— 圓體中文字型
+- [three.js](https://github.com/mrdoob/three.js)（MIT）— 3D 積木城
 - [Tailwind CSS](https://tailwindcss.com)（MIT）
 - 教學設計參考：[GCompris](https://gcompris.net)、PBS KIDS、Khan Academy Kids 等
 
 ## 更新紀錄
 
+- **積木工坊 v2**（2026-11）：🔥 挑戰難度、干擾積木、16 片旋轉拼圖；新增 🏗️ 3D 積木城
 - **積木工坊 v1**（2026-11）：形狀投入箱、動物拼圖、寶寶七巧板（參考 GCompris Complete the puzzle / Baby tangram）
 
 - **v5**（2026-11）：Fluent 3D 圖示、粉圓體、海浪泡泡動畫、島嶼裝飾、糖果色按鈕
