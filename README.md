@@ -8,7 +8,9 @@
 
 🧩 **奇奇積木工坊：https://pitty0574.github.io/qiqi-island-party/blocks/**
 
-🏗️ **新！3D 積木城：https://pitty0574.github.io/qiqi-island-party/blocks3d/**
+🦁 **新！奇奇島 3D 大冒險：https://pitty0574.github.io/qiqi-island-party/island3d/**
+
+🏗️ **3D 積木城：https://pitty0574.github.io/qiqi-island-party/blocks3d/**
 
 ## 特色
 
@@ -50,6 +52,15 @@
 
 ![積木工坊預覽](docs/blocks-preview.png)
 
+## 🦁 奇奇島 3D 大冒險（推箱子解謎）
+
+小獅子在 3D 小島上走格子：把箱子推進水裡變成橋、推到按鈕上打開大門，拿到所有星星後抵達寶箱。共 10 關，每關都經過程式驗證有解，並依步數給 1–3 顆星。
+
+- 操作：方向鍵 / 十字鍵 / 螢幕方向鈕 / 滑動；Z 復原、R 重來、H 提示、Q/E 轉視角
+- 提示會用箭頭指出下一步；走進死路時會提醒按「復原」
+
+![3D 大冒險預覽](docs/adventure-preview.png)
+
 ## 操作方式
 
 | 動作 | 鍵盤 / 遙控器 | 手把 |
@@ -77,6 +88,7 @@
 
 ## 更新紀錄
 
+- **奇奇島 3D 大冒險**（2026-11）：three.js 推箱子搭橋解謎 10 關，內建解題器提供提示與卡關偵測
 - **積木工坊 v2**（2026-11）：🔥 挑戰難度、干擾積木、16 片旋轉拼圖；新增 🏗️ 3D 積木城
 - **積木工坊 v1**（2026-11）：形狀投入箱、動物拼圖、寶寶七巧板（參考 GCompris Complete the puzzle / Baby tangram）
 

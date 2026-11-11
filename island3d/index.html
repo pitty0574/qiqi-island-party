@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>奇奇島 3D 大冒險 - 推箱子搭橋解謎</title>
+<link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<style>
+  * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { font-family: 'Huninn', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif; letter-spacing: 0.02em; color: #1e293b;
+    background: linear-gradient(#7dd3fc 0%, #bae6fd 55%, #e0f2fe 100%); }
+  button { font-family: inherit; cursor: pointer; }
+  img.fe { height: 1.18em; width: 1.18em; display: inline-block; vertical-align: -0.22em; object-fit: contain; pointer-events: none;
+    filter: drop-shadow(0 0.06em 0.05em rgba(0,0,0,0.18)); }
+  #cv { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+  header { position: fixed; top: 0; left: 0; right: 0; height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px;
+    background: rgba(15,23,42,0.45); backdrop-filter: blur(8px); border-bottom: 4px solid rgba(255,255,255,0.3); z-index: 20; }
+  .grp { display: flex; gap: 10px; align-items: center; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; border: 3px solid #fff;
+    font-size: 16px; font-weight: 700; box-shadow: 0 4px 0 rgba(0,0,0,0.18); color: #fff; text-decoration: none; white-space: nowrap; }
+  .amber { background: linear-gradient(#fbbf24, #f97316); } .white { background: #fff; color: #334155; } .pink { background: linear-gradient(#f472b6, #e11d48); }
+
+  #subtitle { position: fixed; top: 72px; left: 50%; transform: translateX(-50%); width: min(900px, 94vw); background: rgba(255,255,255,0.95); border: 4px solid #fbbf24;
+    border-radius: 999px; padding: 6px 18px; display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; cursor: pointer; z-index: 15; box-shadow: 0 6px 16px rgba(0,0,0,0.15); }
+  #subtitle .who { background: #f43f5e; color: #fff; font-size: 13px; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
+  #subtitle-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  #toolbar { position: fixed; left: 14px; bottom: 14px; display: flex; gap: 10px; flex-wrap: wrap; z-index: 10; max-width: 62vw; }
+  .tb { font-size: 18px; font-weight: 700; padding: 9px 16px; border-radius: 999px; border: 4px solid #fff; color: #fff; box-shadow: 0 6px 0 rgba(0,0,0,0.22); }
+  .tb:active, .dp:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.22); }
+  .tb .k { font-size: 12px; opacity: 0.85; margin-left: 3px; }
+  .undo { background: linear-gradient(#38bdf8, #0284c7); } .reset { background: linear-gradient(#fb7185, #e11d48); }
+  .hint { background: linear-gradient(#fde047, #f59e0b); color: #422006; } .rot { background: linear-gradient(#a78bfa, #7c3aed); } .menu { background: #fff; color: #334155; }
+  #dpad { position: fixed; right: 16px; bottom: 14px; display: grid; grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(3, 64px); gap: 6px; z-index: 10; }
+  .dp { border-radius: 20px; border: 4px solid #fff; background: linear-gradient(#fbbf24, #f97316); font-size: 30px; box-shadow: 0 6px 0 rgba(0,0,0,0.22); color: #fff; }
+
+  .overlay { position: fixed; inset: 0; z-index: 80; display: none; align-items: center; justify-content: center; padding: 16px; }
+  .overlay.on { display: flex; }
+  #levels { background: radial-gradient(circle at 50% 30%, rgba(125,211,252,0.96), rgba(2,132,199,0.97)); flex-direction: column; }
+  #levels h1 { color: #fff; font-size: 42px; margin: 0 0 4px; text-shadow: 0 4px 0 rgba(0,0,0,0.18); text-align: center; }
+  #levels .sub { color: #e0f2fe; font-size: 18px; margin-bottom: 18px; text-align: center; }
+  #level-grid { display: grid; grid-template-columns: repeat(5, minmax(120px, 170px)); gap: 14px; }
+  .lv { border-radius: 26px; border: 5px solid #fff; padding: 12px 8px; color: #fff; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    background: linear-gradient(160deg, #34d399, #0f766e); box-shadow: 0 8px 0 rgba(0,0,0,0.2); transition: transform 0.15s; }
+  .lv.done { background: linear-gradient(160deg, #fbbf24, #ea580c); }
+  .lv .no { font-size: 34px; line-height: 1; } .lv .nm { font-size: 15px; } .lv .st { font-size: 17px; letter-spacing: 2px; min-height: 22px; }
+  .focus { transform: scale(1.07); box-shadow: 0 0 0 5px #fff, 0 0 0 11px #facc15, 0 14px 26px rgba(0,0,0,0.35) !important; }
+  #win { background: radial-gradient(circle, rgba(76,29,149,0.8), rgba(15,23,42,0.9)); }
+  .card { background: rgba(255,255,255,0.1); border: 5px solid #fde047; border-radius: 40px; padding: 24px 38px; text-align: center; color: #fff;
+    box-shadow: 0 0 60px rgba(250,204,21,0.45); animation: pop 0.5s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes pop { from { transform: scale(0.7); opacity: 0; } to { transform: none; opacity: 1; } }
+  .card .art { font-size: 96px; } .card h2 { font-size: 36px; color: #fde047; margin: 4px 0; } .card .rate { font-size: 44px; letter-spacing: 6px; }
+  .row { display: flex; gap: 12px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+  .big { font-size: 20px; font-weight: 700; padding: 12px 24px; border-radius: 999px; border: 4px solid #fff; box-shadow: 0 6px 0 rgba(0,0,0,0.2); transition: transform 0.15s; }
+
+  #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 90; }
+  #toast { position: fixed; left: 50%; top: 120px; transform: translate(-50%, -20px); opacity: 0; transition: all 0.3s; z-index: 95;
+    background: rgba(15,23,42,0.92); color: #fff; padding: 8px 18px; border-radius: 999px; border: 3px solid #fff; font-weight: 700; pointer-events: none; }
+  #toast.show { transform: translate(-50%, 0); opacity: 1; }
+  #nogl { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 99; background: #0c4a6e; color: #fff; font-size: 24px; text-align: center; padding: 30px; }
+  @media (max-width: 760px) { #level-grid { grid-template-columns: repeat(2, 1fr); } .tb .k { display: none; } #dpad { grid-template-columns: repeat(3, 54px); grid-template-rows: repeat(3, 54px); } }
+</style>
+</head>
+<body>
+  <canvas id="cv"></canvas>
+  <canvas id="confetti"></canvas>
+  <div id="toast"></div>
+  <div id="nogl">😢 這台裝置的瀏覽器不支援 3D 畫面（WebGL）。<br>請改用電腦或平板的 Chrome / Edge 開啟。</div>
+
+  <header>
+    <div class="grp">
+      <a href="../" class="pill amber">🏝️ 奇奇島</a>
+      <a href="../blocks/" class="pill pink">🧩 積木工坊</a>
+      <span class="pill white" id="hud-level">🗺️ 第 1 關</span>
+    </div>
+    <div class="grp">
+      <span class="pill white">⭐ <span id="hud-stars">0/0</span></span>
+      <span class="pill white">👣 <span id="hud-moves">0</span></span>
+    </div>
+  </header>
+  <div id="subtitle" onclick="repeatVoice()"><span>👩‍🏫</span><span class="who">故事姐姐</span><span id="subtitle-text">歡迎來到奇奇島 3D 大冒險！</span></div>
+
+  <div id="toolbar">
+    <button class="tb undo" onclick="G.undo()">↩️ 復原<span class="k">(□/Z)</span></button>
+    <button class="tb reset" onclick="G.restart()">🔄 重來<span class="k">(△/R)</span></button>
+    <button class="tb hint" onclick="G.hint()">💡 提示<span class="k">(H)</span></button>
+    <button class="tb rot" onclick="G.rotate(-1)">⟲</button>
+    <button class="tb rot" onclick="G.rotate(1)">⟳</button>
+    <button class="tb menu" onclick="G.openLevels()">📋 選關<span class="k">(Esc)</span></button>
+  </div>
+  <div id="dpad">
+    <span></span><button class="dp" onclick="G.dir('up')">▲</button><span></span>
+    <button class="dp" onclick="G.dir('left')">◀</button><span></span><button class="dp" onclick="G.dir('right')">▶</button>
+    <span></span><button class="dp" onclick="G.dir('down')">▼</button><span></span>
+  </div>
+
+  <div class="overlay" id="levels">
+    <h1>🦁 奇奇島 3D 大冒險</h1>
+    <div class="sub">推箱子搭橋、壓按鈕開門，帶小獅子拿到所有星星，找到寶箱！</div>
+    <div id="level-grid"></div>
+  </div>
+  <div class="overlay" id="win">
+    <div class="card">
+      <div class="art">🏆</div>
+      <h2 id="win-title">過關！</h2>
+      <div class="rate" id="win-rate">⭐⭐⭐</div>
+      <div id="win-sub"></div>
+      <div class="row">
+        <button class="big wb" style="background:linear-gradient(#34d399,#059669);color:#fff" onclick="G.next()">▶ 下一關</button>
+        <button class="big wb" style="background:linear-gradient(#38bdf8,#0284c7);color:#fff" onclick="G.restart()">🔄 再玩一次</button>
+        <button class="big wb" style="background:#fff;color:#334155" onclick="G.openLevels()">📋 選關</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function tone(f, d = 0.2, type = 'triangle', v = 0.28, delay = 0) {
+  try {
+    ensureAudio();
+    const t0 = audioCtx.currentTime + delay;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t0);
+    g.gain.setValueAtTime(v, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + d);
+    o.connect(g); g.connect(audioCtx.destination); o.start(t0); o.stop(t0 + d);
+  } catch (e) {}
+}
+const sfx = {
+  move: () => tone(560, 0.07, 'sine', 0.12),
+  pick: () => tone(700, 0.1, 'sine', 0.2),
+  rotate: () => { tone(520, 0.08, 'sine', 0.18); tone(780, 0.1, 'sine', 0.18, 0.06); },
+  place: () => { tone(660, 0.12); tone(990, 0.18, 'triangle', 0.28, 0.08); },
+  wrong: () => tone(220, 0.22, 'sine', 0.2),
+  win: () => [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, 0.3, 'triangle', 0.32, [0, .11, .22, .33, .48, .63][i])),
+};
+
+/* ---------- 語音：瀏覽器內建（挑最自然的） + Azure 雲端（若在奇奇島設定過金鑰） ---------- */
+let voiceCfg = { engine: 'browser', key: '', region: 'eastasia', voice: 'zh-TW-HsiaoChenNeural', rate: '-15%' };
+try { Object.assign(voiceCfg, JSON.parse(localStorage.getItem('qiqi-voice-cfg') || '{}')); } catch (e) {}
+let zhVoice = null, lastSay = '', speakSeq = 0, cloudSrc = null, cloudWarned = false, sdkPromise = null;
+const ttsCache = new Map();
+
+function pickVoice() {
+  if (!('speechSynthesis' in window)) return;
+  const vs = speechSynthesis.getVoices().filter(v => /^(zh|cmn)/i.test(v.lang) && !/HK|yue/i.test(v.lang + v.name));
+  const score = v => (/TW|Taiwan|臺灣|台灣/i.test(v.lang + v.name) ? 60 : 0) + (/Natural|Neural/i.test(v.name) ? 100 : 0) + (/Google/i.test(v.name) ? 45 : 0);
+  vs.sort((a, b) => score(b) - score(a));
+  let saved = null; try { saved = localStorage.getItem('qiqi-voice-name'); } catch (e) {}
+  zhVoice = vs.find(v => v.name === saved) || vs[0] || null;
+}
+if ('speechSynthesis' in window) { speechSynthesis.onvoiceschanged = pickVoice; pickVoice(); }
+
+function cleanText(t) {
+  return String(t).replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '').replace(/\s+/g, ' ').trim();
+}
+function useCloud() { return voiceCfg.engine === 'azure' && voiceCfg.key && voiceCfg.region; }
+function stopSpeech() {
+  speakSeq++;
+  if (cloudSrc) { try { cloudSrc.stop(); } catch (e) {} cloudSrc = null; }
+  if ('speechSynthesis' in window) { try { speechSynthesis.cancel(); } catch (e) {} }
+}
+function ssml(text) {
+  const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-TW"><voice name="${voiceCfg.voice}"><prosody rate="${voiceCfg.rate}" pitch="+3%">${esc}</prosody></voice></speak>`;
+}
+async function azureBytes(body) {
+  let res;
+  try {
+    res = await fetch(`https://${voiceCfg.region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+      method: 'POST', body,
+      headers: { 'Ocp-Apim-Subscription-Key': voiceCfg.key, 'Content-Type': 'application/ssml+xml', 'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3' }
+    });
+  } catch (e) {
+    if (!sdkPromise) sdkPromise = new Promise((ok, no) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@1/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js';
+      s.onload = () => window.SpeechSDK ? ok(window.SpeechSDK) : no(new Error('SDK 載入失敗'));
+      s.onerror = () => { sdkPromise = null; no(new Error('無法連線雲端語音')); };
+      document.head.appendChild(s);
+    });
+    const SDK = await sdkPromise;
+    return new Promise((ok, no) => {
+      const cfg = SDK.SpeechConfig.fromSubscription(voiceCfg.key, voiceCfg.region);
+      cfg.speechSynthesisOutputFormat = SDK.SpeechSynthesisOutputFormat.Audio24Khz48KBitRateMonoMp3;
+      const syn = new SDK.SpeechSynthesizer(cfg, null);
+      syn.speakSsmlAsync(body, r => { syn.close(); r.reason === SDK.ResultReason.SynthesizingAudioCompleted ? ok(r.audioData) : no(new Error(r.errorDetails)); },
+        err => { syn.close(); no(new Error(String(err))); });
+    });
+  }
+  if (!res.ok) throw new Error(res.status === 401 ? '金鑰或區域不正確' : `雲端語音錯誤 ${res.status}`);
+  return res.arrayBuffer();
+}
+async function speakCloud(text, seq) {
+  const body = ssml(text);
+  let buf = ttsCache.get(body);
+  if (!buf) {
+    const bytes = await azureBytes(body);
+    ensureAudio();
+    buf = await new Promise((ok, no) => audioCtx.decodeAudioData(bytes.slice(0), ok, no));
+    ttsCache.set(body, buf);
+  }
+  if (seq !== speakSeq) return;
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf; src.connect(audioCtx.destination); src.start(); cloudSrc = src;
+}
+function speakBrowser(text) {
+  if (!('speechSynthesis' in window)) return;
+  try {
+    if (!zhVoice) pickVoice();
+    const u = new SpeechSynthesisUtterance(text);
+    if (zhVoice) { u.voice = zhVoice; u.lang = zhVoice.lang; } else u.lang = 'zh-TW';
+    const natural = zhVoice && /Natural|Neural|Google/i.test(zhVoice.name);
+    u.rate = natural ? 0.95 : 0.9; u.pitch = natural ? 1.05 : 1.18;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function say(text) {
+  lastSay = text;
+  document.getElementById('subtitle-text').textContent = text;
+  const t = cleanText(text);
+  if (!t) return;
+  stopSpeech();
+  const seq = speakSeq;
+  if (useCloud()) {
+    speakCloud(t, seq).catch(err => {
+      if (!cloudWarned) { cloudWarned = true; toast(`☁️ 雲端語音暫時不能用（${err.message}），先用內建語音`); }
+      if (seq === speakSeq) speakBrowser(t);
+    });
+  } else speakBrowser(t);
+}
+function repeatVoice() { ensureAudio(); if (lastSay) say(lastSay); }
+function toast(t, ms = 3000) {
+  const el = document.getElementById('toast');
+  el.textContent = t; el.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('show'), ms);
+}
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+
+sfx.splash = () => { tone(300, 0.25, 'sine', 0.3); tone(180, 0.35, 'sine', 0.25, 0.08); tone(900, 0.12, 'triangle', 0.12, 0.05); };
+sfx.star = () => { tone(880, 0.12); tone(1175, 0.14, 'triangle', 0.28, 0.08); tone(1568, 0.22, 'triangle', 0.28, 0.16); };
+sfx.gate = () => { tone(392, 0.15, 'square', 0.12); tone(523, 0.15, 'square', 0.12, 0.12); tone(659, 0.25, 'square', 0.12, 0.24); };
+sfx.step = () => tone(520, 0.07, 'sine', 0.16);
+sfx.push = () => tone(240, 0.12, 'triangle', 0.25);
+sfx.bump = () => tone(150, 0.09, 'sine', 0.16);
+
+const cvs = document.getElementById('confetti'), cctx = cvs.getContext('2d');
+let parts = [];
+function resizeCvs() { cvs.width = innerWidth; cvs.height = innerHeight; }
+addEventListener('resize', resizeCvs); resizeCvs();
+function confetti(n = 140) {
+  const C = ['#f43f5e', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#facc15'];
+  for (let i = 0; i < n; i++) parts.push({ x: innerWidth / 2, y: innerHeight / 2, vx: (Math.random() - 0.5) * 22, vy: (Math.random() - 0.85) * 22 - 3,
+    s: Math.random() * 10 + 6, c: C[i % C.length], r: Math.random() * 360, vr: (Math.random() - 0.5) * 14, life: 100 });
+}
+(function loop() {
+  cctx.clearRect(0, 0, cvs.width, cvs.height);
+  parts.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.36; p.r += p.vr; p.life -= 1.3;
+    cctx.save(); cctx.translate(p.x, p.y); cctx.rotate(p.r * Math.PI / 180); cctx.fillStyle = p.c; cctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s); cctx.restore(); });
+  parts = parts.filter(p => p.life > 0);
+  requestAnimationFrame(loop);
+})();
+const FLUENT_MAP = {"↩️":"21a9-fe0f","▶":"25b6-fe0f","◀":"25c0-fe0f","☁️":"2601-fe0f","⛵":"26f5","⭐":"2b50","🌈":"1f308","🌋":"1f30b","🌙":"1f319","🌞":"1f31e","🌱":"1f331","🌲":"1f332","🌳":"1f333","🌴":"1f334","🌸":"1f338","🌼":"1f33c","🍄":"1f344","🍦":"1f366","🎁":"1f381","🎉":"1f389","🎋":"1f38b","🎮":"1f3ae","🏆":"1f3c6","🏗️":"1f3d7-fe0f","🏘️":"1f3d8-fe0f","🏝️":"1f3dd-fe0f","🏠":"1f3e0","🏰":"1f3f0","🐙":"1f419","🐚":"1f41a","🐟":"1f41f","🐠":"1f420","🐰":"1f430","🐳":"1f433","🐼":"1f43c","👆":"1f446","👇":"1f447","👣":"1f463","👩‍🏫":"1f469-200d-1f3eb","💡":"1f4a1","📋":"1f4cb","🔄":"1f504","🔊":"1f50a","🔍":"1f50d","🔥":"1f525","🔸":"1f538","🔺":"1f53a","🗺️":"1f5fa-fe0f","😢":"1f622","🚀":"1f680","🚂":"1f682","🤖":"1f916","🥕":"1f955","🥚":"1f95a","🦁":"1f981","🦋":"1f98b","🦖":"1f996","🧩":"1f9e9","🪐":"1fa90"};
+const FLUENT_CDNS = ['https://cdn.jsdelivr.net/npm/@lobehub/fluent-emoji-3d@1.1.0/assets/', 'https://unpkg.com/@lobehub/fluent-emoji-3d@1.1.0/assets/'];
+const EMOJI_RE = /\p{Extended_Pictographic}(?:️|⃣)?(?:‍\p{Extended_Pictographic}️?)*/gu;
+let fluentOffline = false;
+const SKIP = 'script,style,svg,canvas,[data-no-fluent]';
+function feImg(e) {
+  const img = document.createElement('img');
+  img.className = 'fe'; img.alt = e; img.draggable = false;
+  let i = 0;
+  img.src = FLUENT_CDNS[0] + FLUENT_MAP[e] + '.webp';
+  img.onerror = () => { i++; if (i < FLUENT_CDNS.length) img.src = FLUENT_CDNS[i] + FLUENT_MAP[e] + '.webp'; else { fluentOffline = true; img.replaceWith(document.createTextNode(e)); } };
+  return img;
+}
+function feText(node) {
+  const t = node.nodeValue;
+  if (!t || fluentOffline) return;
+  EMOJI_RE.lastIndex = 0; if (!EMOJI_RE.test(t)) return;
+  const par = node.parentNode;
+  if (!par || par.nodeType !== 1 || par.closest(SKIP)) return;
+  EMOJI_RE.lastIndex = 0;
+  const frag = document.createDocumentFragment(); let last = 0, ch = false, m;
+  while ((m = EMOJI_RE.exec(t))) {
+    if (!FLUENT_MAP[m[0]]) continue;
+    if (m.index > last) frag.append(t.slice(last, m.index));
+    frag.append(feImg(m[0])); last = m.index + m[0].length; ch = true;
+  }
+  if (!ch) return;
+  if (last < t.length) frag.append(t.slice(last));
+  par.replaceChild(frag, node);
+}
+function feTree(root) {
+  if (!root || fluentOffline) return;
+  if (root.nodeType === 3) return feText(root);
+  if (root.nodeType !== 1 || root.closest(SKIP)) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); const list = [];
+  while (w.nextNode()) list.push(w.currentNode);
+  list.forEach(feText);
+}
+feTree(document.body);
+new MutationObserver(ms => { if (fluentOffline) return; ms.forEach(m => m.type === 'characterData' ? feText(m.target) : m.addedNodes.forEach(n => n.isConnected && feTree(n))); })
+  .observe(document.body, { childList: true, subtree: true, characterData: true });
+
+
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+/* ===== 核心規則（遊戲與關卡驗證共用） =====
+ * . 草地  ~ 水  T 樹  # 石頭  B 箱子  * 星星  P 起點  G 寶箱  o 按鈕  D 大門 */
+const LEVELS = [
+  { best: 14, name: '第一步', tip: '用方向鍵帶小獅子去拿星星，再走到寶箱那裡！', map: ['P..*.', '.....', '..T..', '.....', '*...G'] },
+  { best: 6, name: '箱子變小橋', tip: '過不去河怎麼辦？把箱子推進水裡，它會變成一座橋！', map: ['*..~.', 'PB.~G', '...~.'] },
+  { best: 22, name: '兩座橋', tip: '這次有兩條河，要用兩個箱子搭兩座橋喔！', map: ['P....~*~G', '.B.B.~.~.', '.....~~~.'] },
+  { best: 13, name: '轉個彎', tip: '石頭牆只有一個缺口！箱子要先往下推，再往右推！', map: ['P...#..', '..B.#.G', '....#..', '....~.*'] },
+  { best: 12, name: '按鈕和大門', tip: '大門關起來了！把箱子推到紅色按鈕上，門就會打開！', map: ['P....#..', '.B...D.G', '..o..#.*', '.....#..'] },
+  { best: 23, name: '星星小島', tip: '星星在小島上，寶箱也在河的另一邊，兩個箱子要推去哪裡呢？', map: ['P...~~~~', '.B..~*~~', '....~~~G', '.B..~~~.', '....~...'] },
+  { best: 24, name: '寬寬的大河', tip: '這條河有兩格寬！要把兩個箱子排成一直線才過得去！', map: ['P..T..~~.*', '.B.B..~~.G', '......~~..', '..T...~~..'] },
+  { best: 24, name: '誰先誰後', tip: '想一想，哪個箱子要先推？順序錯了會卡住喔！', map: ['~~~~~~~~~', '~P..#..*~', '~.B.#.~~~', '~.B.~.~G~', '~...#.~.~', '~~~~~~~~~'] },
+  { best: 29, name: '大門守衛', tip: '一個箱子搭橋，一個箱子壓按鈕，別把兩個都推進水裡了！', map: ['P....~..#..', '.B...~..D.G', '.....~.o#.*', '.B...~..#..', '.....~..#..'] },
+  { best: 22, name: '終極大冒險', tip: '最後一關！搭橋、壓按鈕、再搭橋，你一定做得到！', map: ['P...~...#..*', '.B..~.o.D.B.', '....~...#~~~', '.B..~.B.#..G', '....~...#...'] },
+];
+function parseLevel(def) {
+  const h = def.map.length, w = def.map[0].length;
+  const L = { w, h, base: [], stars: [], plates: [], gates: [], goal: -1, name: def.name, tip: def.tip, best: def.best || 0 };
+  const s = { p: 0, crates: [], bridges: [], stars: 0 };
+  def.map.forEach((row, y) => [...row].forEach((c, x) => {
+    const i = y * w + x; let b = '.';
+    if (c === '~' || c === 'T' || c === '#') b = c;
+    else if (c === 'B') s.crates.push(i);
+    else if (c === '*') L.stars.push(i);
+    else if (c === 'P') s.p = i;
+    else if (c === 'G') { L.goal = i; b = 'G'; }
+    else if (c === 'o') { L.plates.push(i); b = 'o'; }
+    else if (c === 'D') { L.gates.push(i); b = 'D'; }
+    L.base.push(b);
+  }));
+  L.full = (1 << L.stars.length) - 1;
+  return { L, s };
+}
+const gateOpen = (L, s) => L.plates.length > 0 && L.plates.every(i => s.crates.includes(i));
+function step(L, s, dx, dy) {
+  const x = s.p % L.w, y = (s.p / L.w) | 0, nx = x + dx, ny = y + dy;
+  if (nx < 0 || ny < 0 || nx >= L.w || ny >= L.h) return null;
+  const n = ny * L.w + nx, c0 = L.base[n];
+  if (c0 === 'T' || c0 === '#') return null;
+  if (c0 === '~' && !s.bridges.includes(n)) return null;
+  if (c0 === 'D' && !gateOpen(L, s)) return null;
+  let crates = s.crates, bridges = s.bridges, ev = 'move';
+  if (crates.includes(n)) {
+    const bx = nx + dx, by = ny + dy;
+    if (bx < 0 || by < 0 || bx >= L.w || by >= L.h) return null;
+    const b = by * L.w + bx, c = L.base[b];
+    if (c === 'T' || c === '#' || c === 'D' || c === 'G' || crates.includes(b)) return null;
+    const si = L.stars.indexOf(b);
+    if (si >= 0 && !((s.stars >> si) & 1)) return null;
+    crates = crates.filter(i => i !== n);
+    if (c === '~' && !bridges.includes(b)) { bridges = [...bridges, b].sort((a, z) => a - z); ev = 'splash'; }
+    else { crates = [...crates, b].sort((a, z) => a - z); ev = 'push'; }
+  }
+  let stars = s.stars;
+  const si = L.stars.indexOf(n);
+  if (si >= 0 && !((stars >> si) & 1)) { stars |= 1 << si; ev += '+star'; }
+  return { p: n, crates, bridges, stars, ev };
+}
+const isWin = (L, s) => s.p === L.goal && s.stars === L.full;
+const keyOf = s => s.p + '|' + s.crates.join(',') + '|' + s.bridges.join(',') + '|' + s.stars;
+const DIR4 = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+/* 廣度優先搜尋：回傳最短路徑（方向陣列）；無解回傳 null；超過上限回傳 undefined */
+function solve(L, s0, cap = 300000) {
+  if (isWin(L, s0)) return [];
+  const seen = new Map([[keyOf(s0), null]]);
+  let q = [s0], n = 0;
+  while (q.length) {
+    const nq = [];
+    for (const s of q) for (let d = 0; d < 4; d++) {
+      const t = step(L, s, DIR4[d][0], DIR4[d][1]);
+      if (!t) continue;
+      const k = keyOf(t);
+      if (seen.has(k)) continue;
+      seen.set(k, [keyOf(s), d]);
+      if (isWin(L, t)) { const path = []; let kk = k; while (seen.get(kk)) { const [pk, dd] = seen.get(kk); path.unshift(dd); kk = pk; } return path; }
+      if (++n > cap) return undefined;
+      nq.push(t);
+    }
+    q = nq;
+  }
+  return null;
+}
+if (typeof module !== 'undefined') module.exports = { LEVELS, parseLevel, step, solve, isWin };
+
+
+/* =====================================================================
+ * 3D 場景
+ * ===================================================================== */
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('cv'), antialias: true, alpha: true }); }
+catch (e) { document.getElementById('nogl').style.display = 'flex'; throw e; }
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 200);
+
+const M = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.6, ...o });
+const geo = {
+  tile: new RoundedBoxGeometry(0.98, 0.6, 0.98, 3, 0.1),
+  crate: new RoundedBoxGeometry(0.8, 0.8, 0.8, 3, 0.08),
+  band: new THREE.BoxGeometry(0.84, 0.12, 0.84),
+};
+const starGeo = (() => {
+  const sh = new THREE.Shape();
+  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2 + Math.PI / 2, r = i % 2 ? 0.14 : 0.32; sh[i ? 'lineTo' : 'moveTo'](Math.cos(a) * r, Math.sin(a) * r); }
+  const g = new THREE.ExtrudeGeometry(sh, { depth: 0.1, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 2 });
+  g.center(); return g;
+})();
+
+function makeLion() {
+  const g = new THREE.Group();
+  const fur = M(0xfbbf24), mane = M(0xea580c), dark = M(0x1e293b), pink = M(0xfb7185);
+  const add = (geom, mat, x, y, z, s) => { const m = new THREE.Mesh(geom, mat); m.position.set(x, y, z); if (s) m.scale.set(...s); m.castShadow = true; g.add(m); return m; };
+  const sph = new THREE.SphereGeometry(1, 20, 16);
+  add(sph, fur, 0, 0.3, -0.04, [0.27, 0.26, 0.3]);                 // 身體
+  add(sph, mane, 0, 0.62, 0.06, [0.33, 0.33, 0.2]);                // 鬃毛
+  add(sph, fur, 0, 0.62, 0.14, [0.24, 0.23, 0.22]);                // 頭
+  add(sph, fur, -0.17, 0.86, 0.08, [0.07, 0.07, 0.05]); add(sph, fur, 0.17, 0.86, 0.08, [0.07, 0.07, 0.05]);  // 耳朵
+  add(sph, dark, -0.09, 0.67, 0.34, [0.035, 0.045, 0.03]); add(sph, dark, 0.09, 0.67, 0.34, [0.035, 0.045, 0.03]); // 眼睛
+  add(sph, M(0xfef3c7), 0, 0.57, 0.33, [0.1, 0.07, 0.06]);         // 嘴巴
+  add(sph, pink, 0, 0.6, 0.39, [0.035, 0.025, 0.02]);              // 鼻子
+  [[-0.14, 0.12], [0.14, 0.12], [-0.14, -0.16], [0.14, -0.16]].forEach(([x, z]) => add(sph, fur, x, 0.09, z, [0.08, 0.1, 0.08])); // 腳
+  const tail = add(new THREE.CylinderGeometry(0.025, 0.025, 0.3, 8), fur, 0, 0.4, -0.38); tail.rotation.x = -0.9;
+  add(sph, mane, 0, 0.5, -0.5, [0.06, 0.06, 0.06]);
+  return g;
+}
+
+let scene, L, S, lvlIdx = 0, history = [], moves = 0, won = false;
+let lion, crateMeshes = [], starMeshes = [], gateMeshes = [], plateMeshes = [], chest, hintArrow, water;
+let az = 12, azShown = 12, hop = 0, face = 0, camR = 14;
+const cellPos = i => new THREE.Vector3((i % L.w) - (L.w - 1) / 2, 0, ((i / L.w) | 0) - (L.h - 1) / 2);
+
+function buildScene() {
+  scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x9ed0ff, 1.7));
+  const sun = new THREE.DirectionalLight(0xffffff, 2.1);
+  sun.position.set(5, 11, 7); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+  const ext = Math.max(L.w, L.h) / 2 + 2;
+  Object.assign(sun.shadow.camera, { left: -ext, right: ext, top: ext, bottom: -ext });
+  scene.add(sun);
+
+  water = new THREE.Mesh(new THREE.PlaneGeometry(L.w + 14, L.h + 14, 24, 24), M(0x38bdf8, { transparent: true, opacity: 0.82, roughness: 0.25, metalness: 0.1 }));
+  water.rotation.x = -Math.PI / 2; water.position.y = -0.22; water.receiveShadow = true;
+  scene.add(water);
+  const bed = new THREE.Mesh(new THREE.PlaneGeometry(L.w + 14, L.h + 14), M(0x0369a1));
+  bed.rotation.x = -Math.PI / 2; bed.position.y = -0.75; scene.add(bed);
+
+  gateMeshes = []; plateMeshes = []; starMeshes = [];
+  L.base.forEach((c, i) => {
+    if (c === '~') return;
+    const p = cellPos(i), x = i % L.w, y = (i / L.w) | 0;
+    const t = new THREE.Mesh(geo.tile, M((x + y) % 2 ? 0x86efac : 0x4ade80, { roughness: 0.85 }));
+    t.position.set(p.x, -0.3, p.z); t.receiveShadow = true; scene.add(t);
+    if (c === 'T') {
+      const g = new THREE.Group();
+      const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 0.4, 10), M(0x92400e)); tr.position.y = 0.2;
+      const l1 = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.6, 14), M(0x16a34a)); l1.position.y = 0.65;
+      const l2 = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.5, 14), M(0x22c55e)); l2.position.y = 1.0;
+      g.add(tr, l1, l2); g.traverse(o => { o.castShadow = true; }); g.position.copy(p); scene.add(g);
+    } else if (c === '#') {
+      const r = new THREE.Mesh(new THREE.DodecahedronGeometry(0.44, 0), M(0x94a3b8, { flatShading: true }));
+      r.position.set(p.x, 0.3, p.z); r.rotation.set(i, i * 2, i * 3); r.castShadow = true; r.receiveShadow = true; scene.add(r);
+    } else if (c === 'o') {
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.42, 0.05, 24), M(0x475569)); base.position.set(p.x, 0.025, p.z); scene.add(base);
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.32, 0.1, 24), M(0xef4444, { emissive: 0x7f1d1d })); b.position.set(p.x, 0.08, p.z);
+      b.userData.cell = i; scene.add(b); plateMeshes.push(b);
+    } else if (c === 'D') {
+      const g = new THREE.Group();
+      [-0.32, -0.11, 0.11, 0.32].forEach(dx => { const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.0, 10), M(0xf59e0b, { metalness: 0.3, roughness: 0.4 })); bar.position.set(0, 0.5, dx); bar.castShadow = true; g.add(bar); });
+      const top = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.12, 0.9), M(0xb45309)); top.position.y = 1.02; top.castShadow = true; g.add(top);
+      // 讓柵欄橫跨走道：看左右哪一邊是牆
+      const lx = L.base[i - 1], rx = L.base[i + 1];
+      if (!((lx === '#' || lx === 'T') && (rx === '#' || rx === 'T')) ) g.rotation.y = 0; else g.rotation.y = Math.PI / 2;
+      g.position.copy(p); scene.add(g); gateMeshes.push(g);
+    } else if (c === 'G') {
+      chest = new THREE.Group();
+      const body = new THREE.Mesh(new RoundedBoxGeometry(0.62, 0.36, 0.44, 2, 0.05), M(0x92400e)); body.position.y = 0.18;
+      const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.62, 16, 1, false, 0, Math.PI), M(0xb45309)); lid.rotation.z = Math.PI / 2; lid.position.y = 0.36;
+      const band = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.47), M(0xfacc15, { metalness: 0.5, roughness: 0.3 })); band.position.y = 0.26;
+      const glow = new THREE.Mesh(new THREE.RingGeometry(0.36, 0.47, 32), new THREE.MeshBasicMaterial({ color: 0xfde047, transparent: true, side: THREE.DoubleSide }));
+      glow.rotation.x = -Math.PI / 2; glow.position.y = 0.02;
+      chest.add(body, lid, band, glow); chest.userData.glow = glow;
+      chest.traverse(o => { if (o !== glow) o.castShadow = true; }); chest.position.copy(p); scene.add(chest);
+    }
+  });
+  L.stars.forEach(i => {
+    const s = new THREE.Mesh(starGeo, M(0xfacc15, { emissive: 0xca8a04, emissiveIntensity: 0.6, metalness: 0.3, roughness: 0.3 }));
+    const p = cellPos(i); s.position.set(p.x, 0.55, p.z); s.castShadow = true; scene.add(s); starMeshes.push(s);
+  });
+  lion = makeLion(); scene.add(lion);
+  hintArrow = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.42, 14), new THREE.MeshBasicMaterial({ color: 0xf59e0b }));
+  hintArrow.rotation.x = Math.PI; hintArrow.visible = false; scene.add(hintArrow);
+}
+
+function makeCrate() {
+  const g = new THREE.Group();
+  const b = new THREE.Mesh(geo.crate, M(0xd97706)); const band = new THREE.Mesh(geo.band, M(0x92400e));
+  b.castShadow = true; b.receiveShadow = true; g.add(b, band); scene.add(g);
+  return g;
+}
+function rebuildDynamic() {
+  crateMeshes.forEach(c => scene.remove(c.mesh));
+  crateMeshes = [];
+  const mk = (i, sunk) => { const mesh = makeCrate(); const p = cellPos(i); mesh.position.set(p.x, sunk ? -0.42 : 0.4, p.z); crateMeshes.push({ mesh, cell: i, sunk }); };
+  S.crates.forEach(i => mk(i, false)); S.bridges.forEach(i => mk(i, true));
+  const p = cellPos(S.p); lion.position.set(p.x, 0, p.z);
+  syncStatic();
+}
+function syncStatic() {
+  starMeshes.forEach((m, i) => { m.visible = !((S.stars >> i) & 1); });
+  plateMeshes.forEach(m => { const on = S.crates.includes(m.userData.cell); m.material.color.setHex(on ? 0x22c55e : 0xef4444); m.material.emissive.setHex(on ? 0x14532d : 0x7f1d1d); m.position.y = on ? 0.04 : 0.08; });
+  document.getElementById('hud-stars').textContent = `${bits(S.stars)}/${L.stars.length}`;
+  document.getElementById('hud-moves').textContent = moves;
+}
+const bits = n => { let c = 0; while (n) { c += n & 1; n >>= 1; } return c; };
+
+function resize() {
+  const W = innerWidth, H = innerHeight;
+  renderer.setSize(W, H, false);
+  camera.aspect = W / H; camera.updateProjectionMatrix();
+  const span = Math.max(L ? L.w : 6, (L ? L.h : 4) * 1.5);
+  camR = (span * 1.05 + 6.5) * Math.max(1, 1.45 / camera.aspect);
+}
+addEventListener('resize', resize);
+
+/* =====================================================================
+ * 遊戲流程
+ * ===================================================================== */
+const SAVE = 'qiqi-island3d-v1';
+let save = { stars: {} };
+try { Object.assign(save, JSON.parse(localStorage.getItem(SAVE) || '{}')); } catch (e) {}
+const persist = () => { try { localStorage.setItem(SAVE, JSON.stringify(save)); } catch (e) {} };
+const $ = id => document.getElementById(id);
+const overlayOn = id => $(id).classList.contains('on');
+
+function loadLevel(i, quiet) {
+  lvlIdx = i;
+  const parsed = parseLevel(LEVELS[i]);
+  L = parsed.L; S = parsed.s; history = []; moves = 0; won = false;
+  $('levels').classList.remove('on'); $('win').classList.remove('on');
+  buildScene(); rebuildDynamic(); resize();
+  az = 12; azShown = 12; face = 0;
+  $('hud-level').textContent = `🗺️ 第 ${i + 1} 關 ${L.name}`;
+  if (!quiet) say(L.tip);
+}
+
+let gateWasOpen = false;
+function move(dx, dy) {
+  if (won || !L) return false;
+  hintArrow.visible = false;
+  face = Math.atan2(dx, dy);
+  const t = step(L, S, dx, dy);
+  if (!t) { sfx.bump(); hop = 0.35; return false; }
+  history.push(S); moves++;
+  const before = S; S = t; hop = 1;
+  if (t.ev.startsWith('push') || t.ev.startsWith('splash')) {
+    const cm = crateMeshes.find(c => c.cell === t.p && !c.sunk);
+    const b = t.p + dx + dy * L.w;
+    if (cm) { cm.cell = b; if (t.ev.startsWith('splash')) cm.sunk = true; }
+    if (t.ev.startsWith('splash')) { sfx.splash(); say(pick(['撲通！箱子變成一座橋了！', '嘩啦！可以從箱子上走過去囉！'])); } else sfx.push();
+  } else sfx.step();
+  if (t.ev.includes('star')) { sfx.star(); const left = L.stars.length - bits(S.stars); say(left ? `拿到星星了！還有 ${left} 顆！` : '星星都拿到了！快去找寶箱！'); }
+  const open = gateOpen(L, S);
+  if (open !== gateOpen(L, before)) { sfx.gate(); say(open ? '喀啦！大門打開了！' : '大門又關起來了！'); }
+  syncStatic();
+  if (isWin(L, S)) { won = true; setTimeout(win, 550); }
+  else if (S.p === L.goal) say('寶箱鎖住了！要先拿到所有的星星喔！');
+  else { clearTimeout(move._t); move._t = setTimeout(checkStuck, 700); }
+  return true;
+}
+function checkStuck() {
+  if (won) return;
+  if (solve(L, S, 150000) === null) say('哎呀，這樣好像過不去了！按「復原」退一步試試看！');
+}
+function win() {
+  const rate = moves <= L.best ? 3 : moves <= L.best * 1.6 + 2 ? 2 : 1;
+  save.stars[lvlIdx] = Math.max(save.stars[lvlIdx] || 0, rate); persist();
+  sfx.win(); confetti(160);
+  $('win-title').textContent = `第 ${lvlIdx + 1} 關過關！`;
+  $('win-rate').textContent = '⭐'.repeat(rate) + '☆'.repeat(3 - rate);
+  $('win-sub').textContent = `你走了 ${moves} 步（最厲害的走法是 ${L.best} 步）`;
+  const last = lvlIdx === LEVELS.length - 1;
+  document.querySelectorAll('.wb')[0].style.display = last ? 'none' : '';
+  $('win').classList.add('on');
+  setFocusList(); focusIdx = last ? 1 : 0; paintFocus();
+  say(last ? '太厲害了！你完成了全部的冒險！你是奇奇島的大英雄！' : pick(['找到寶箱了！你好聰明！', '過關！小獅子好開心！', '太棒了！你想到辦法了！']));
+}
+function undo() {
+  ensureAudio();
+  if (won || !history.length) { sfx.bump(); return; }
+  S = history.pop(); moves++; hintArrow.visible = false;
+  rebuildDynamic(); sfx.rotate(); say('退回一步！');
+}
+function restart() { ensureAudio(); loadLevel(lvlIdx, true); sfx.rotate(); say('重新開始！' + L.tip); }
+function next() { loadLevel(Math.min(LEVELS.length - 1, lvlIdx + 1)); }
+function hint() {
+  ensureAudio();
+  if (won) return;
+  const path = solve(L, S, 300000);
+  if (!path) { say(path === null ? '這樣過不去了，按「復原」退幾步，或按「重來」！' : '這一題好難，我也要想一想！先自己試試看！'); return; }
+  const [dx, dy] = DIR4[path[0]];
+  const c = cellPos(S.p);
+  hintArrow.position.set(c.x + dx, 1.25, c.z + dy); hintArrow.visible = true;
+  const willPush = S.crates.includes(S.p + dx + dy * L.w);
+  say(willPush ? '看箭頭！往這邊推箱子！' : '看箭頭！往這邊走一步！');
+}
+function rotate(d) { ensureAudio(); az += d * 90; sfx.rotate(); }
+
+/* 方向鍵依照目前視角換算：按「上」永遠是往畫面裡面走 */
+function dir(name) {
+  ensureAudio();
+  if (overlayOn('levels') || overlayOn('win')) { focusMove(name); return; }
+  let v = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[name];
+  const q = ((Math.round(az / 90) % 4) + 4) % 4;
+  for (let i = 0; i < q; i++) v = [v[1], -v[0]];
+  move(v[0], v[1]);
+}
+
+/* ---------- 選關與過關畫面的焦點 ---------- */
+let focusList = [], focusIdx = 0, focusCols = 1;
+function setFocusList() {
+  if (overlayOn('win')) { focusList = [...document.querySelectorAll('.wb')].filter(b => b.style.display !== 'none'); focusCols = focusList.length; }
+  else { focusList = [...document.querySelectorAll('.lv')]; focusCols = innerWidth <= 760 ? 2 : 5; }
+}
+function paintFocus() { document.querySelectorAll('.focus').forEach(e => e.classList.remove('focus')); if (focusList[focusIdx]) { focusList[focusIdx].classList.add('focus'); focusList[focusIdx].scrollIntoView?.({ block: 'nearest' }); } }
+function focusMove(name) {
+  const d = { left: -1, right: 1, up: -focusCols, down: focusCols }[name];
+  const n = focusIdx + d;
+  if (n >= 0 && n < focusList.length) { focusIdx = n; sfx.move(); paintFocus(); }
+}
+function openLevels() {
+  ensureAudio();
+  $('win').classList.remove('on');
+  const grid = $('level-grid'); grid.innerHTML = '';
+  LEVELS.forEach((d, i) => {
+    const st = save.stars[i] || 0;
+    const b = document.createElement('button');
+    b.className = 'lv' + (st ? ' done' : '');
+    b.innerHTML = `<span class="no">${i + 1}</span><span class="nm">${d.name}</span><span class="st">${st ? '⭐'.repeat(st) : '🔸'}</span>`;
+    b.onclick = () => loadLevel(i);
+    grid.appendChild(b);
+  });
+  $('levels').classList.add('on');
+  setFocusList();
+  const firstNew = LEVELS.findIndex((_, i) => !save.stars[i]);
+  focusIdx = firstNew < 0 ? 0 : firstNew; paintFocus();
+  say('選一關開始冒險吧！');
+}
+function ok() {
+  ensureAudio();
+  if (overlayOn('levels') || overlayOn('win')) { focusList[focusIdx]?.click(); return; }
+  hint();
+}
+function back() { if (overlayOn('levels')) { if (L) $('levels').classList.remove('on'); } else openLevels(); }
+
+window.G = { dir, undo, restart, hint, rotate, openLevels, next, ok,
+  get state() { return S; }, get level() { return L; }, get moves() { return moves; }, get won() { return won; }, solve: () => solve(L, S), move, loadLevel };
+
+/* ---------- 鍵盤 / 遙控器 / 手把 / 滑動 ---------- */
+addEventListener('keydown', e => {
+  const m = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }, k = e.key.toLowerCase();
+  if (m[e.key]) { e.preventDefault(); dir(m[e.key]); }
+  else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ok(); }
+  else if (k === 'z' || e.key === 'Backspace') { e.preventDefault(); undo(); }
+  else if (k === 'r') restart();
+  else if (k === 'h') hint();
+  else if (k === 'q') rotate(-1);
+  else if (k === 'e') rotate(1);
+  else if (e.key === 'Escape') back();
+});
+const cv = renderer.domElement; let sw = null;
+cv.addEventListener('pointerdown', e => { ensureAudio(); sw = { x: e.clientX, y: e.clientY }; });
+cv.addEventListener('pointerup', e => {
+  if (!sw) return;
+  const dx = e.clientX - sw.x, dy = e.clientY - sw.y; sw = null;
+  if (Math.hypot(dx, dy) < 28) return;
+  dir(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+});
+const pads = {};
+function pollPads() {
+  let list = [];
+  try { list = navigator.getGamepads ? navigator.getGamepads() : []; } catch (e) { return; }
+  for (const gp of list) {
+    if (!gp) continue;
+    const st = pads[gp.index] || (pads[gp.index] = { prev: {}, dir: null, next: 0 });
+    const now = {}; [0, 1, 2, 3, 4, 5, 9, 12, 13, 14, 15].forEach(i => now[i] = !!(gp.buttons[i] && gp.buttons[i].pressed));
+    const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0;
+    let d = null;
+    if (now[12] || ay < -0.6) d = 'up'; else if (now[13] || ay > 0.6) d = 'down'; else if (now[14] || ax < -0.6) d = 'left'; else if (now[15] || ax > 0.6) d = 'right';
+    const t = performance.now();
+    if (d && d !== st.dir) { dir(d); st.next = t + 380; } else if (d && t > st.next) { dir(d); st.next = t + 190; }
+    st.dir = d;
+    const edge = i => now[i] && !st.prev[i];
+    if (edge(0)) ok(); if (edge(1)) back(); if (edge(2)) undo(); if (edge(3)) restart();
+    if (edge(4)) rotate(-1); if (edge(5)) rotate(1); if (edge(9)) hint();
+    st.prev = now;
+  }
+}
+addEventListener('gamepadconnected', () => toast('🎮 手把已連線！十字鍵走路、□ 復原、△ 重來、✕ 提示、L1/R1 轉視角'));
+
+/* ---------- 每一格畫面 ---------- */
+let last = performance.now();
+function frame(t) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (t - last) / 1000); last = t;
+  pollPads();
+  if (!scene) return;
+  azShown += (az - azShown) * 0.14;
+  const a = azShown * Math.PI / 180, el = 0.92;
+  camera.position.set(camR * Math.cos(el) * Math.sin(a), camR * Math.sin(el), camR * Math.cos(el) * Math.cos(a) + 0.6);
+  camera.lookAt(0, 0, 0.6);
+  // 小獅子：滑向目標格、跳一下、轉向
+  const tp = cellPos(S.p);
+  lion.position.x += (tp.x - lion.position.x) * 0.28; lion.position.z += (tp.z - lion.position.z) * 0.28;
+  hop = Math.max(0, hop - dt * 4.5);
+  const onBridge = S.bridges.includes(S.p);
+  lion.position.y = (onBridge ? -0.02 : 0) + Math.sin(Math.PI * hop) * 0.3 + (won ? Math.abs(Math.sin(t / 160)) * 0.35 : 0);
+  let dr = face - lion.rotation.y; while (dr > Math.PI) dr -= Math.PI * 2; while (dr < -Math.PI) dr += Math.PI * 2;
+  lion.rotation.y += dr * 0.3;
+  crateMeshes.forEach(c => { const p = cellPos(c.cell); const m = c.mesh;
+    m.position.x += (p.x - m.position.x) * 0.3; m.position.z += (p.z - m.position.z) * 0.3;
+    const near = Math.abs(p.x - m.position.x) + Math.abs(p.z - m.position.z) < 0.25;
+    const ty = c.sunk && near ? -0.42 + Math.sin(t / 500 + c.cell) * 0.015 : 0.4;
+    m.position.y += (ty - m.position.y) * 0.2; });
+  const open = gateOpen(L, S);
+  gateMeshes.forEach(g => { g.position.y += ((open ? -1.0 : 0) - g.position.y) * 0.15; });
+  starMeshes.forEach((s, i) => { s.rotation.y = t / 500 + i; s.position.y = 0.55 + Math.sin(t / 350 + i) * 0.07; });
+  if (chest) { const ready = S.stars === L.full; chest.userData.glow.visible = ready; chest.userData.glow.material.opacity = 0.5 + 0.5 * Math.sin(t / 180); chest.scale.setScalar(ready ? 1 + Math.sin(t / 200) * 0.05 : 1); }
+  if (hintArrow.visible) hintArrow.position.y = 1.2 + Math.sin(t / 150) * 0.12;
+  const pos = water.geometry.attributes.position;
+  for (let i = 0; i < pos.count; i++) pos.setZ(i, Math.sin(pos.getX(i) * 1.3 + t / 700) * 0.035 + Math.cos(pos.getY(i) * 1.1 + t / 900) * 0.035);
+  pos.needsUpdate = true;
+  renderer.render(scene, camera);
+}
+
+const q = parseInt(new URLSearchParams(location.search).get('level') || '0', 10);
+loadLevel(q >= 1 && q <= LEVELS.length ? q - 1 : Math.max(0, LEVELS.findIndex((_, i) => !save.stars[i])), true);
+if (!(q >= 1)) openLevels();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
